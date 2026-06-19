@@ -1,12 +1,17 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Libertinus_Serif, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import { SITE_URL, CREATOR_X, CREATOR_HANDLE } from "@/lib/site";
 import SearchHotkey from "@/components/SearchHotkey";
 import SiteHeader from "@/components/SiteHeader";
 import "./globals.css";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+const libertinus = Libertinus_Serif({
+  variable: "--font-libertinus",
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
+  style: ["normal", "italic"],
+});
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 const SITE = SITE_URL;
@@ -39,7 +44,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`} suppressHydrationWarning>
+    <html lang="en" className={`${libertinus.variable} ${geistMono.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
         {/* Set the theme before paint to avoid a flash of the wrong colors. */}
         <script

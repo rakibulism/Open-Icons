@@ -72,7 +72,7 @@ html[data-theme="dark"] {
 .back-btn:hover { border-color: var(--figma-color-border-selected, #0d99ff); }
 
 /* Compact primary button (home Browse buttons) */
-.btn-primary.sm { padding: 6px 13px; border-radius: 40px; }
+.btn-primary.sm { padding: 6px 13px; border-radius: 8px; }
 .btn-primary.sm .btn-label { font-size: 11px; }
 
 /* Size control */
@@ -97,7 +97,7 @@ html[data-theme="dark"] {
 .btn-primary {
   position: relative; display: inline-flex; align-items: center; justify-content: center;
   border: none; cursor: pointer; text-decoration: none;
-  padding: 10px 18px; border-radius: 62px; overflow: hidden; isolation: isolate;
+  padding: 10px 18px; border-radius: 10px; overflow: hidden; isolation: isolate;
   background: linear-gradient(rgb(51,51,51) 0%, rgb(32,32,32) 100%);
   box-shadow:
     rgba(255,255,255,0.04) 0px 220px 4px -200px inset,
@@ -116,10 +116,15 @@ html[data-theme="dark"] {
   -webkit-mask-image: linear-gradient(#000 0%, rgba(0,0,0,0) 56%);
   mask-image: linear-gradient(#000 0%, rgba(0,0,0,0) 56%);
   transform: translate(-50%, -50%);
-  animation: oi-spin 6s linear infinite;
+  opacity: 0; transition: opacity 0.25s ease;
+}
+.btn-primary:hover .btn-glow, .btn-primary:focus-visible .btn-glow {
+  opacity: 1; animation: oi-spin 6s linear infinite;
 }
 @keyframes oi-spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .btn-primary .btn-glow { animation: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .btn-primary:hover .btn-glow, .btn-primary:focus-visible .btn-glow { animation: none; }
+}
 
 /* Settings */
 .settings { padding: 0 12px 8px; display: flex; flex-direction: column; gap: 8px; }
