@@ -107,8 +107,9 @@ export default function HeroWater({ className = "" }: { className?: string }) {
     const section = canvas?.closest("section");
     if (!canvas || !section) return;
 
-    const gl = canvas.getContext("webgl2", { premultipliedAlpha: false, antialias: false });
-    if (!gl || !gl.getExtension("EXT_color_buffer_float")) return; // no float RT → keep <img> fallback
+    const ctx = canvas.getContext("webgl2", { premultipliedAlpha: false, antialias: false });
+    if (!ctx || !ctx.getExtension("EXT_color_buffer_float")) return; // no float RT → keep <img> fallback
+    const gl: WebGL2RenderingContext = ctx; // non-null for the closures below
 
     let disposed = false;
     let raf = 0;
