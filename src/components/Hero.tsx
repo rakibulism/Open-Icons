@@ -40,12 +40,20 @@ export default function Hero({ total, sets }: { total: number; sets: number }) {
 
   return (
     <section className="relative isolate overflow-hidden">
-      {/* Sunset sky background — fades out toward the bottom, sits low so the
-          content stays legible. Scales with the section (bg-cover) at any width. */}
-      <div
+      {/* Sunset sky background — a seamless looping video, faded out toward the
+          bottom so the content stays legible. object-cover keeps it scalable and
+          responsive; the still serves as the poster for instant first paint. */}
+      <video
         aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 bg-[url('/brand/hero-bg.jpg')] bg-cover bg-center opacity-35 [mask-image:linear-gradient(to_bottom,black_0%,black_35%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,black_0%,black_35%,transparent_100%)]"
-      />
+        autoPlay
+        muted
+        loop
+        playsInline
+        poster="/brand/hero-bg.jpg"
+        className="pointer-events-none absolute inset-0 -z-10 h-full w-full object-cover object-center opacity-35 [mask-image:linear-gradient(to_bottom,black_0%,black_35%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,black_0%,black_35%,transparent_100%)]"
+      >
+        <source src="/brand/hero-bg.mp4" type="video/mp4" />
+      </video>
 
       <div className="mx-auto flex max-w-3xl flex-col items-center px-5 py-16 text-center sm:py-24">
       {/* Audience toggle */}
