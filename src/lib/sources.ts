@@ -298,18 +298,44 @@ export const SOURCES: IconSource[] = [
       return { name: baseName(path), variant: p[1], category: p[2], path };
     },
   },
+
+  // 14. Doodle Icons — hand-drawn set bundled in this repo, served from /public.
+  {
+    id: "doodle",
+    name: "Doodle Icons",
+    type: "site",
+    pkg: "doodle",
+    ref: "1.0.0",
+    localDir: "public/doodle",
+    license: { name: "Free", url: "https://github.com/rakibulism/Open-Icons" },
+    homepage: "https://github.com/rakibulism/Open-Icons",
+    repoUrl: "https://github.com/rakibulism/Open-Icons",
+    defaultVariant: "default",
+    variants: ["default"],
+    mono: true,
+    parse(path) {
+      if (!isSvg(path)) return null;
+      const p = parts(path);
+      if (p.length !== 2 || p[0] !== "doodle") return null; // "/doodle/<name>.svg"
+      return { name: baseName(path), variant: "default", path };
+    },
+  },
 ];
 
 export function getSource(id: string): IconSource | undefined {
   return SOURCES.find((s) => s.id === id);
 }
 
-/** Build a jsDelivr CDN URL for a given source + resolved version + path. */
+/** Build a CDN URL for a given source + resolved version + path. */
 export function cdnUrl(
   source: Pick<IconSource, "type" | "pkg">,
   version: string,
   path: string,
 ): string {
+  // "site" sources (e.g. doodle) are served from the project's own /public —
+  // the path is already site-relative (e.g. "/doodle/x.svg"). Consumers on the
+  // website use it as-is; the plugin prefixes its data-source origin.
+  if (source.type === "site") return path;
   return `https://cdn.jsdelivr.net/${source.type}/${source.pkg}@${version}${path}`;
 }
 

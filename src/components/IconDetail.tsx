@@ -8,7 +8,7 @@ import IconImage from "./IconImage";
 export type SetMeta = {
   name: string;
   version: string;
-  type: "gh" | "npm";
+  type: "gh" | "npm" | "site";
   pkg: string;
   mono: boolean;
 };

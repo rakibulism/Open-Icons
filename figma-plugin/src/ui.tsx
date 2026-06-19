@@ -15,7 +15,7 @@ const SHAPE_THRESHOLD = 0.55;
 type SetMeta = {
   name: string;
   version: string;
-  type: "gh" | "npm";
+  type: "gh" | "npm" | "site";
   pkg: string;
   mono: boolean;
   defaultVariant: string;
@@ -47,11 +47,13 @@ function pathForVariant(sm: SetMeta, hit: Hit, variant: string) {
   return hit.v[variant] ?? hit.v[sm.defaultVariant] ?? Object.values(hit.v)[0];
 }
 function urlFor(sm: SetMeta, hit: Hit, variant?: string) {
-  return cdnUrl(
+  const u = cdnUrl(
     { type: sm.type, pkg: sm.pkg },
     sm.version,
     pathForVariant(sm, hit, variant ?? sm.defaultVariant),
   );
+  // "site" sources resolve to a site-relative path — prefix the data origin.
+  return u.startsWith("/") ? `${DATA_URL}${u}` : u;
 }
 function normalize(s: string) {
   return s

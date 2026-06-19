@@ -25,12 +25,14 @@ export type IconSource = {
   id: string;
   /** Human display name (e.g. "Lucide"). */
   name: string;
-  /** jsDelivr origin: GitHub repo or npm package. */
-  type: "gh" | "npm";
+  /** Origin: jsDelivr GitHub repo, npm package, or files served from /public ("site"). */
+  type: "gh" | "npm" | "site";
   /** "user/repo" for gh, or "@scope/pkg" / "pkg" for npm. */
   pkg: string;
   /** Optional ref override (branch/tag/version). Defaults to latest. */
   ref?: string;
+  /** For "site" sources: a local directory the sync reads instead of jsDelivr. */
+  localDir?: string;
   license: LicenseInfo;
   homepage: string;
   repoUrl: string;
@@ -63,7 +65,7 @@ export type SetManifest = {
   id: string;
   name: string;
   version: string;
-  type: "gh" | "npm";
+  type: "gh" | "npm" | "site";
   pkg: string;
   license: LicenseInfo;
   homepage: string;

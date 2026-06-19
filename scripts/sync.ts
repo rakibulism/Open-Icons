@@ -12,8 +12,8 @@
  *
  *   npm run sync
  */
-import { mkdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { mkdir, writeFile, readdir } from "node:fs/promises";
+import { basename, join } from "node:path";
 import { SOURCES, treeUrl, versionsUrl } from "../src/lib/sources";
 import type { ManifestIcon, SetManifest, SetSummary } from "../src/lib/types";
 
@@ -39,13 +39,24 @@ async function resolveVersion(source: (typeof SOURCES)[number]): Promise<string>
   return latest;
 }
 
+/** List SVGs from a local /public dir as site-relative paths (e.g. /doodle/x.svg). */
+async function listLocal(localDir: string): Promise<JsdFile[]> {
+  const dir = join(process.cwd(), localDir);
+  const entries = await readdir(dir);
+  const base = basename(localDir);
+  return entries
+    .filter((f) => f.toLowerCase().endsWith(".svg"))
+    .map((f) => ({ name: `/${base}/${f}` }));
+}
+
 async function syncOne(
   source: (typeof SOURCES)[number],
   syncedAt: string,
 ): Promise<{ summary: SetSummary; manifest: SetManifest }> {
-  const version = await resolveVersion(source);
-  const tree = await getJson<{ files?: JsdFile[] }>(treeUrl(source, version));
-  const files = tree.files ?? [];
+  const version = source.localDir ? (source.ref ?? "1.0.0") : await resolveVersion(source);
+  const files = source.localDir
+    ? await listLocal(source.localDir)
+    : (await getJson<{ files?: JsdFile[] }>(treeUrl(source, version))).files ?? [];
 
   // Group parsed files by icon name -> { variant: path }.
   const byName = new Map<string, ManifestIcon>();

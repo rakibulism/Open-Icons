@@ -33,9 +33,8 @@ export default function SiteHeader() {
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight" onClick={() => setMenuOpen(false)}>
-          <span className="grid h-6 w-6 place-items-center rounded-md bg-accent text-accent-foreground text-xs font-bold">
-            OI
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="Open Icons" width={26} height={26} className="h-[26px] w-[26px] rounded-md" />
           Open Icons
         </Link>
 
