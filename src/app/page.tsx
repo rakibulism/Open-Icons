@@ -84,7 +84,7 @@ export default async function Home() {
                     {set.variants.slice(0, 4).map((v) => (
                       <span
                         key={v}
-                        className="rounded-md border px-1.5 py-0.5 text-[11px] text-muted"
+                        className="rounded-md bg-accent/10 px-1.5 py-0.5 text-[11px] font-medium text-accent"
                       >
                         {v}
                       </span>
