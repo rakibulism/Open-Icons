@@ -36,7 +36,10 @@ yarn-error.log*
 
 # generated icon manifests + search index (auto-synced at build time, never committed)
 /src/data/
-/public/data/
+/public/data/*
+# fingerprints are expensive to regenerate (fetches ~18k SVGs) and are NOT part
+# of prebuild, so commit this one so the deployed plugin can fetch it.
+!/public/data/fingerprints.json
 /.icon-cache/
 
 # secrets

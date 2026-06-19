@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "sync": "tsx scripts/sync.ts",
-    "prebuild": "tsx scripts/sync.ts"
+    "prebuild": "tsx scripts/sync.ts",
+    "sync:fingerprints": "tsx scripts/fingerprints.ts"
   },
   "dependencies": {
     "next": "16.2.9",

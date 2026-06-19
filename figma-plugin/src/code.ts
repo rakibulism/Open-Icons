@@ -12,16 +12,21 @@
  */
 
 const STORAGE_KEY = "open-icons:data-url";
+const LISTS_KEY = "open-icons:lists"; // { favorites, recents }
 const DATA_KEY = "openIcons"; // pluginData namespace on inserted nodes
 
 figma.showUI(__html__, { width: 380, height: 600, themeColors: true });
 
 type IconMeta = { set: string; name: string; variant: string };
 
+type Lists = { favorites: unknown[]; recents: unknown[] };
+
 type UiMessage =
   | { type: "get-config" }
   | { type: "set-config"; dataUrl: string }
   | { type: "get-selection" }
+  | { type: "get-lists" }
+  | { type: "set-lists"; lists: Lists }
   | { type: "insert-svg"; svg: string; meta: IconMeta }
   | { type: "replace-svg"; svg: string; meta: IconMeta }
   | { type: "resize"; height: number }
@@ -88,6 +93,19 @@ figma.ui.onmessage = async (msg: UiMessage) => {
 
     case "get-selection":
       await sendSelection();
+      break;
+
+    case "get-lists": {
+      const lists = (await figma.clientStorage.getAsync(LISTS_KEY)) ?? {
+        favorites: [],
+        recents: [],
+      };
+      figma.ui.postMessage({ type: "lists", lists });
+      break;
+    }
+
+    case "set-lists":
+      await figma.clientStorage.setAsync(LISTS_KEY, msg.lists);
       break;
 
     case "insert-svg": {

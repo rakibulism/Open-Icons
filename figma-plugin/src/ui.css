@@ -80,4 +80,44 @@ body {
   border-radius: 6px; cursor: pointer; padding: 6px;
 }
 .cell:hover { border-color: var(--figma-color-border-selected, #0d99ff); }
+.cell { position: relative; }
 .thumb { width: 20px; height: 20px; display: inline-block; }
+.badge {
+  position: absolute; bottom: 1px; right: 2px; font-size: 8px; line-height: 1;
+  color: var(--figma-color-text-secondary, #888);
+}
+
+.scroll { flex: 1; overflow-y: auto; }
+.scroll .grid { flex: none; }
+.section {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.04em; color: var(--figma-color-text-secondary, #888);
+  padding: 10px 12px 2px;
+}
+.chips.wrap { flex-wrap: wrap; overflow: visible; }
+
+/* Variant / insert popover */
+.sheet-bg {
+  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.3);
+  display: flex; align-items: flex-end;
+}
+.sheet {
+  width: 100%;
+  background: var(--figma-color-bg, #fff);
+  border-top: 1px solid var(--figma-color-border, #e6e6e6);
+  border-radius: 10px 10px 0 0;
+  padding: 12px; box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.12);
+}
+.sheet-head { display: flex; align-items: center; justify-content: space-between; }
+.heart {
+  border: none; background: none; cursor: pointer; font-size: 18px;
+  color: var(--figma-color-text-secondary, #888); padding: 4px;
+}
+.heart.on { color: #f5a623; }
+.sheet-actions { display: flex; gap: 8px; margin-top: 12px; }
+.sheet-actions .primary, .sheet-actions .secondary { flex: 1; padding: 9px 12px; font-size: 12px; }
+.secondary {
+  border: 1px solid var(--figma-color-border, #e6e6e6);
+  background: var(--figma-color-bg, #fff); color: inherit;
+  border-radius: 6px; cursor: pointer;
+}

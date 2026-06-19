@@ -1,10 +1,13 @@
 import { createRoot } from "react-dom/client";
 import { useEffect, useMemo, useRef, useState } from "react";
-// Shared with the website — the single source of truth for CDN URL building.
+// Shared with the website — single source of truth for CDN URLs + geometry.
 import { cdnUrl } from "../../src/lib/sources";
+import { fingerprint, similarity } from "../../src/lib/fingerprint";
 
 const DEFAULT_DATA_URL = "https://open-icons.vercel.app";
 const MAX_RESULTS = 150;
+const MAX_RECENTS = 24;
+const SHAPE_THRESHOLD = 0.55;
 
 type SetMeta = {
   name: string;
@@ -18,19 +21,24 @@ type Hit = { n: string; s: string; v: Record<string, string> };
 type Index = { total: number; sets: Record<string, SetMeta>; icons: Hit[] };
 type IconMeta = { set: string; name: string; variant: string };
 type Selection = { name: string; nodeType: string; detected: IconMeta | null } | null;
+type Ref = { s: string; n: string };
 
 function post(msg: unknown) {
   parent.postMessage({ pluginMessage: msg }, "*");
 }
+const keyOf = (r: { s: string; n: string }) => `${r.s}:${r.n}`;
 
-function pathFor(sm: SetMeta, hit: Hit) {
-  return hit.v[sm.defaultVariant] ?? Object.values(hit.v)[0];
+function pathForVariant(sm: SetMeta, hit: Hit, variant: string) {
+  return hit.v[variant] ?? hit.v[sm.defaultVariant] ?? Object.values(hit.v)[0];
 }
-function urlFor(sm: SetMeta, hit: Hit) {
-  return cdnUrl({ type: sm.type, pkg: sm.pkg }, sm.version, pathFor(sm, hit));
+function urlFor(sm: SetMeta, hit: Hit, variant?: string) {
+  return cdnUrl(
+    { type: sm.type, pkg: sm.pkg },
+    sm.version,
+    pathForVariant(sm, hit, variant ?? sm.defaultVariant),
+  );
 }
 
-/** Normalize a layer name / icon name for fuzzy library matching. */
 function normalize(s: string) {
   return s
     .toLowerCase()
@@ -69,11 +77,22 @@ function App() {
   const [activeSet, setActiveSet] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [draftUrl, setDraftUrl] = useState("");
+
   const [selection, setSelection] = useState<Selection>(null);
   const [selectionSvgUrl, setSelectionSvgUrl] = useState<string | null>(null);
+  const [selectionSvgText, setSelectionSvgText] = useState<string | null>(null);
   const svgUrlRef = useRef<string | null>(null);
 
-  // Receive config + selection from the sandbox.
+  const [favorites, setFavorites] = useState<Ref[]>([]);
+  const [recents, setRecents] = useState<Ref[]>([]);
+
+  const [active, setActive] = useState<{ hit: Hit; variant: string } | null>(null);
+
+  const [fingerprints, setFingerprints] = useState<Record<string, string> | null>(null);
+  const [shapeMatches, setShapeMatches] = useState<{ hit: Hit; score: number }[]>([]);
+  const fpFetching = useRef(false);
+
+  // ---- Sandbox messages ----
   useEffect(() => {
     const handler = (e: MessageEvent) => {
       const msg = e.data?.pluginMessage;
@@ -82,6 +101,9 @@ function App() {
         const url = (msg.dataUrl as string | null) ?? DEFAULT_DATA_URL;
         setDataUrl(url);
         setDraftUrl(url);
+      } else if (msg.type === "lists") {
+        setFavorites((msg.lists?.favorites as Ref[]) ?? []);
+        setRecents((msg.lists?.recents as Ref[]) ?? []);
       } else if (msg.type === "selection") {
         setSelection(msg.node as Selection);
         if (svgUrlRef.current) {
@@ -89,18 +111,22 @@ function App() {
           svgUrlRef.current = null;
         }
         if (msg.svg) {
-          const blob = new Blob([msg.svg as BlobPart], { type: "image/svg+xml" });
+          const bytes = msg.svg as Uint8Array;
+          const blob = new Blob([bytes as BlobPart], { type: "image/svg+xml" });
           const u = URL.createObjectURL(blob);
           svgUrlRef.current = u;
           setSelectionSvgUrl(u);
+          setSelectionSvgText(new TextDecoder().decode(bytes));
         } else {
           setSelectionSvgUrl(null);
+          setSelectionSvgText(null);
         }
       }
     };
     window.addEventListener("message", handler);
     post({ type: "get-config" });
     post({ type: "get-selection" });
+    post({ type: "get-lists" });
     const t = setTimeout(() => setDataUrl((cur) => cur ?? DEFAULT_DATA_URL), 600);
     return () => {
       window.removeEventListener("message", handler);
@@ -108,7 +134,7 @@ function App() {
     };
   }, []);
 
-  // Load the search index whenever the data URL changes.
+  // ---- Load search index ----
   useEffect(() => {
     if (!dataUrl) return;
     let alive = true;
@@ -133,13 +159,12 @@ function App() {
     };
   }, [dataUrl]);
 
-  // Fast lookups for selection identification.
   const { byKey, byNorm } = useMemo(() => {
     const byKey = new Map<string, Hit>();
     const byNorm = new Map<string, Hit[]>();
     if (index) {
       for (const it of index.icons) {
-        byKey.set(`${it.s}:${it.n}`, it);
+        byKey.set(keyOf(it), it);
         const k = normalize(it.n);
         const arr = byNorm.get(k);
         if (arr) arr.push(it);
@@ -149,6 +174,9 @@ function App() {
     return { byKey, byNorm };
   }, [index]);
 
+  const favSet = useMemo(() => new Set(favorites.map(keyOf)), [favorites]);
+
+  // ---- Search ----
   const { results, matchCount, capped } = useMemo(() => {
     if (!index) return { results: [] as Hit[], matchCount: 0, capped: false };
     const q = query.trim().toLowerCase();
@@ -170,13 +198,83 @@ function App() {
     [index],
   );
 
-  async function send(hit: Hit, mode: "insert" | "replace") {
+  const nameGuesses = useMemo(() => {
+    if (!index || !selection || selection.detected) return [];
+    return byNorm.get(normalize(selection.name)) ?? [];
+  }, [index, selection, byNorm]);
+
+  // ---- Shape matching: only when unrecognized by stamp + name ----
+  const needShape = !!(
+    index && selection && !selection.detected && nameGuesses.length === 0 && selectionSvgText
+  );
+
+  useEffect(() => {
+    if (!needShape || !dataUrl) return;
+    if (fingerprints || fpFetching.current) return;
+    fpFetching.current = true;
+    fetch(`${dataUrl.replace(/\/$/, "")}/data/fingerprints.json`)
+      .then((r) => (r.ok ? r.json() : {}))
+      .then((d) => setFingerprints(d as Record<string, string>))
+      .catch(() => setFingerprints({}))
+      .finally(() => {
+        fpFetching.current = false;
+      });
+  }, [needShape, dataUrl, fingerprints]);
+
+  useEffect(() => {
+    if (!needShape || !fingerprints || !index || !selectionSvgText) {
+      setShapeMatches([]);
+      return;
+    }
+    const sig = fingerprint(selectionSvgText);
+    if (!sig) {
+      setShapeMatches([]);
+      return;
+    }
+    const scored: { hit: Hit; score: number }[] = [];
+    for (const it of index.icons) {
+      const fp = fingerprints[keyOf(it)];
+      if (!fp) continue;
+      const score = similarity(sig, fp);
+      if (score >= SHAPE_THRESHOLD) scored.push({ hit: it, score });
+    }
+    scored.sort((a, b) => b.score - a.score);
+    setShapeMatches(scored.slice(0, 12));
+  }, [needShape, fingerprints, index, selectionSvgText]);
+
+  // ---- Actions ----
+  function persist(next: { favorites?: Ref[]; recents?: Ref[] }) {
+    post({
+      type: "set-lists",
+      lists: { favorites: next.favorites ?? favorites, recents: next.recents ?? recents },
+    });
+  }
+
+  function toggleFav(hit: Hit) {
+    const k = keyOf(hit);
+    const next = favSet.has(k)
+      ? favorites.filter((f) => keyOf(f) !== k)
+      : [{ s: hit.s, n: hit.n }, ...favorites];
+    setFavorites(next);
+    persist({ favorites: next });
+  }
+
+  function addRecent(hit: Hit) {
+    const k = keyOf(hit);
+    const next = [{ s: hit.s, n: hit.n }, ...recents.filter((r) => keyOf(r) !== k)].slice(0, MAX_RECENTS);
+    setRecents(next);
+    persist({ recents: next });
+  }
+
+  async function send(hit: Hit, mode: "insert" | "replace", variant?: string) {
     if (!index) return;
     const sm = index.sets[hit.s];
-    const meta: IconMeta = { set: hit.s, name: hit.n, variant: sm.defaultVariant };
+    const v = variant ?? sm.defaultVariant;
+    const meta: IconMeta = { set: hit.s, name: hit.n, variant: v };
     try {
-      const svg = await fetch(urlFor(sm, hit)).then((r) => r.text());
+      const svg = await fetch(urlFor(sm, hit, v)).then((r) => r.text());
       post({ type: mode === "replace" ? "replace-svg" : "insert-svg", svg, meta });
+      addRecent(hit);
     } catch {
       setStatus("Couldn't fetch that icon — try again.");
     }
@@ -189,6 +287,27 @@ function App() {
     setSettingsOpen(false);
     setDataUrl(url);
   }
+
+  function refsToHits(refs: Ref[]): Hit[] {
+    return refs.map((r) => byKey.get(keyOf(r))).filter((h): h is Hit => !!h);
+  }
+
+  const cell = (hit: Hit, onClick: () => void, badge?: string) => {
+    const sm = index!.sets[hit.s];
+    return (
+      <button
+        key={keyOf(hit)}
+        className="cell"
+        title={`${hit.n} · ${sm.name}${badge ? ` · ${badge}` : ""}`}
+        onClick={onClick}
+      >
+        <Icon src={urlFor(sm, hit)} mono={sm.mono} />
+        {badge && <span className="badge">{badge}</span>}
+      </button>
+    );
+  };
+
+  const openSheet = (hit: Hit) => setActive({ hit, variant: index!.sets[hit.s].defaultVariant });
 
   // ---- Selection panel ----
   let panel: React.ReactNode = null;
@@ -209,63 +328,45 @@ function App() {
             )}
             <div>
               <div className="ident-name">{meta.name}</div>
-              <div className="ident-sub">
-                {sm ? sm.name : meta.set} · {meta.variant}
-              </div>
+              <div className="ident-sub">{sm ? sm.name : meta.set} · {meta.variant}</div>
             </div>
           </div>
           {others.length > 0 && (
             <>
               <div className="panel-sub">Swap to another pack ({others.length})</div>
-              <div className="grid small">
-                {others.map((h) => {
-                  const osm = index.sets[h.s];
-                  return (
-                    <button
-                      key={`${h.s}:${h.n}`}
-                      className="cell"
-                      title={`${h.n} · ${osm.name}`}
-                      onClick={() => send(h, "replace")}
-                    >
-                      <Icon src={urlFor(osm, h)} mono={osm.mono} />
-                    </button>
-                  );
-                })}
-              </div>
+              <div className="grid small">{others.map((h) => cell(h, () => send(h, "replace")))}</div>
             </>
           )}
         </div>
       );
-    } else {
-      const guesses = byNorm.get(normalize(selection.name)) ?? [];
+    } else if (nameGuesses.length > 0) {
       panel = (
         <div className="panel">
           <div className="panel-head">Selected layer</div>
-          {guesses.length > 0 ? (
+          <div className="panel-sub">Looks like “{selection.name}” — swap with a library icon</div>
+          <div className="grid small">{nameGuesses.map((h) => cell(h, () => send(h, "replace")))}</div>
+        </div>
+      );
+    } else {
+      panel = (
+        <div className="panel">
+          <div className="panel-head">Selected layer</div>
+          {shapeMatches.length > 0 ? (
             <>
-              <div className="panel-sub">Looks like “{selection.name}” — swap with a library icon</div>
+              <div className="panel-sub">Closest shapes (approximate)</div>
               <div className="grid small">
-                {guesses.map((h) => {
-                  const osm = index.sets[h.s];
-                  return (
-                    <button
-                      key={`${h.s}:${h.n}`}
-                      className="cell"
-                      title={`${h.n} · ${osm.name}`}
-                      onClick={() => send(h, "replace")}
-                    >
-                      <Icon src={urlFor(osm, h)} mono={osm.mono} />
-                    </button>
-                  );
-                })}
+                {shapeMatches.map(({ hit, score }) =>
+                  cell(hit, () => send(hit, "replace"), `${Math.round(score * 100)}%`),
+                )}
               </div>
             </>
           ) : (
             <div className="ident">
               {selectionSvgUrl && <img className="ident-thumb" src={selectionSvgUrl} alt="" />}
               <div className="ident-sub">
-                “{selection.name}” isn’t recognized. Insert one below, or rename the layer to an
-                icon name (e.g. “home”) and reselect.
+                {needShape && !fingerprints
+                  ? "Analyzing shape…"
+                  : `“${selection.name}” isn’t recognized. Insert one below, or rename the layer to an icon name.`}
               </div>
             </div>
           )}
@@ -273,6 +374,9 @@ function App() {
       );
     }
   }
+
+  const favHits = refsToHits(favorites);
+  const recentHits = refsToHits(recents);
 
   return (
     <div className="app">
@@ -301,9 +405,7 @@ function App() {
               onChange={(e) => setDraftUrl(e.target.value)}
               placeholder="https://open-icons.vercel.app"
             />
-            <button className="primary" onClick={saveSettings}>
-              Save
-            </button>
+            <button className="primary" onClick={saveSettings}>Save</button>
           </div>
           <p className="hint">Points at any Open Icons deployment serving /data/search.json.</p>
         </div>
@@ -311,10 +413,7 @@ function App() {
 
       {index && (
         <div className="chips">
-          <button
-            className={`chip ${activeSet === null ? "active" : ""}`}
-            onClick={() => setActiveSet(null)}
-          >
+          <button className={`chip ${activeSet === null ? "active" : ""}`} onClick={() => setActiveSet(null)}>
             All
           </button>
           {setList.map(([id, meta]) => (
@@ -338,27 +437,100 @@ function App() {
         </p>
       )}
 
-      <div className="grid">
-        {results.map((hit) => {
-          const sm = index!.sets[hit.s];
-          return (
-            <button
-              key={`${hit.s}:${hit.n}`}
-              className="cell"
-              title={`${hit.n} · ${sm.name}`}
-              onClick={() => send(hit, "insert")}
-            >
-              <Icon src={urlFor(sm, hit)} mono={sm.mono} />
-            </button>
-          );
-        })}
-      </div>
-
+      {index && query.trim() && (
+        <div className="grid">{results.map((hit) => cell(hit, () => openSheet(hit)))}</div>
+      )}
       {index && query.trim() && results.length === 0 && (
         <p className="status">No icons match “{query}”.</p>
       )}
-      {index && !query.trim() && !panel && (
-        <p className="empty">Type to search every Open Icons pack, then click to insert.</p>
+
+      {index && !query.trim() && (
+        <div className="scroll">
+          {favHits.length > 0 && (
+            <>
+              <div className="section">★ Favorites</div>
+              <div className="grid">{favHits.map((hit) => cell(hit, () => openSheet(hit)))}</div>
+            </>
+          )}
+          {recentHits.length > 0 && (
+            <>
+              <div className="section">Recent</div>
+              <div className="grid">{recentHits.map((hit) => cell(hit, () => openSheet(hit)))}</div>
+            </>
+          )}
+          {favHits.length === 0 && recentHits.length === 0 && !panel && (
+            <p className="empty">Type to search every Open Icons pack, then click to insert.</p>
+          )}
+        </div>
+      )}
+
+      {active && index && (
+        <div className="sheet-bg" onClick={() => setActive(null)}>
+          <div className="sheet" onClick={(e) => e.stopPropagation()}>
+            {(() => {
+              const sm = index.sets[active.hit.s];
+              const variants = Object.keys(active.hit.v);
+              const isFav = favSet.has(keyOf(active.hit));
+              return (
+                <>
+                  <div className="sheet-head">
+                    <div className="ident">
+                      <span className="ident-thumb">
+                        <Icon src={urlFor(sm, active.hit, active.variant)} mono={sm.mono} />
+                      </span>
+                      <div>
+                        <div className="ident-name">{active.hit.n}</div>
+                        <div className="ident-sub">{sm.name} · {active.variant}</div>
+                      </div>
+                    </div>
+                    <button
+                      className={`heart ${isFav ? "on" : ""}`}
+                      title={isFav ? "Unfavorite" : "Favorite"}
+                      onClick={() => toggleFav(active.hit)}
+                    >
+                      {isFav ? "★" : "☆"}
+                    </button>
+                  </div>
+                  {variants.length > 1 && (
+                    <div className="chips wrap">
+                      {variants.map((v) => (
+                        <button
+                          key={v}
+                          className={`chip ${v === active.variant ? "active" : ""}`}
+                          onClick={() => setActive({ hit: active.hit, variant: v })}
+                        >
+                          {v}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <div className="sheet-actions">
+                    <button
+                      className="primary"
+                      onClick={() => {
+                        send(active.hit, "insert", active.variant);
+                        setActive(null);
+                      }}
+                    >
+                      Insert
+                    </button>
+                    {selection && (
+                      <button
+                        className="secondary"
+                        onClick={() => {
+                          send(active.hit, "replace", active.variant);
+                          setActive(null);
+                        }}
+                      >
+                        Replace selection
+                      </button>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        </div>
       )}
     </div>
   );
