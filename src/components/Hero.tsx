@@ -81,11 +81,27 @@ export default function Hero({ total, sets }: { total: number; sets: number }) {
             onChange={(e) => setQuery(e.target.value)}
             placeholder={`Search ${total.toLocaleString()} icons across all packs…`}
             aria-label="Search all icons"
-            className="w-full rounded-2xl border bg-surface py-4 pl-12 pr-14 text-base shadow-sm outline-none transition-colors placeholder:text-muted focus:border-border-strong"
+            className="w-full rounded-2xl border bg-surface py-4 pl-12 pr-14 text-base shadow-sm outline-none transition-colors placeholder:text-muted focus:border-border-strong [&::-webkit-search-cancel-button]:appearance-none"
           />
-          <kbd className="pointer-events-none absolute right-4 top-1/2 hidden h-6 min-w-[1.5rem] -translate-y-1/2 items-center justify-center rounded-md border bg-background px-1.5 font-sans text-xs text-muted sm:inline-flex">
-            /
-          </kbd>
+          {query ? (
+            <button
+              type="button"
+              onClick={() => {
+                setQuery("");
+                inputRef.current?.focus();
+              }}
+              aria-label="Clear search"
+              className="absolute right-3 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-md text-muted transition-colors hover:bg-foreground/5 hover:text-foreground"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            </button>
+          ) : (
+            <kbd className="pointer-events-none absolute right-4 top-1/2 hidden h-6 min-w-[1.5rem] -translate-y-1/2 items-center justify-center rounded-md border bg-background px-1.5 font-sans text-xs text-muted sm:inline-flex">
+              /
+            </kbd>
+          )}
         </div>
       </form>
 
