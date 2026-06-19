@@ -48,15 +48,24 @@ export default function PrimaryButton({
   );
 }
 
-/** Figma wordmark glyph (monochrome, inherits color). */
+/** Figma glyph — outline (line) style, inherits color. */
 export function FigmaGlyph({ className = "" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 38 57" width="13" height="19" className={className} aria-hidden fill="currentColor">
-      <path d="M19 28.5a9.5 9.5 0 1 1 19 0 9.5 9.5 0 0 1-19 0Z" />
-      <path d="M0 47.5A9.5 9.5 0 0 1 9.5 38H19v9.5a9.5 9.5 0 1 1-19 0Z" />
-      <path d="M19 0v19h9.5a9.5 9.5 0 1 0 0-19H19Z" />
-      <path d="M0 9.5A9.5 9.5 0 0 0 9.5 19H19V0H9.5A9.5 9.5 0 0 0 0 9.5Z" />
-      <path d="M0 28.5A9.5 9.5 0 0 0 9.5 38H19V19H9.5A9.5 9.5 0 0 0 0 28.5Z" />
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      className={className}
+      aria-hidden
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 12a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
+      <path d="M6 6a3 3 0 0 1 3 -3h6a3 3 0 0 1 3 3a3 3 0 0 1 -3 3h-6a3 3 0 0 1 -3 -3" />
+      <path d="M9 9a3 3 0 0 0 0 6h3m-3 0a3 3 0 1 0 3 3v-15" />
     </svg>
   );
 }
