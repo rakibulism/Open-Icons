@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
-import { SITE_URL } from "@/lib/site";
+import { SITE_URL, CREATOR_X, CREATOR_HANDLE } from "@/lib/site";
 import SearchHotkey from "@/components/SearchHotkey";
+import SiteHeader from "@/components/SiteHeader";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -58,39 +59,27 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             }),
           }}
         />
-        <header className="sticky top-0 z-30 border-b bg-background/80 backdrop-blur-md">
-          <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5">
-            <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
-              <span className="grid h-6 w-6 place-items-center rounded-md bg-accent text-accent-foreground text-xs font-bold">
-                OI
-              </span>
-              Open Icons
-            </Link>
-            <nav className="flex items-center gap-5 text-sm text-muted">
-              <Link href="/" className="hover:text-foreground transition-colors">Browse</Link>
-              <Link href="/search" className="hover:text-foreground transition-colors">Search</Link>
-              <a
-                href="https://github.com/rakibulism/Open-Icons"
-                target="_blank"
-                rel="noreferrer"
-                className="hover:text-foreground transition-colors"
-              >
-                GitHub
-              </a>
-            </nav>
-          </div>
-        </header>
+        <SiteHeader />
 
         <SearchHotkey />
         <main className="flex-1">{children}</main>
 
         <footer className="border-t">
-          <div className="mx-auto flex max-w-6xl flex-col gap-1 px-5 py-8 text-sm text-muted">
+          <div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-8 text-sm text-muted">
             <p>
               Open Icons aggregates open-source icon sets. No icons are stored — each
               SVG is served live from its source via jsDelivr.
             </p>
             <p>All icons remain under their original licenses. Check each set for details.</p>
+            <p className="pt-2">
+              <Link href="/docs" className="hover:text-foreground">Docs</Link>
+              <span className="mx-2">·</span>
+              <Link href="/updates" className="hover:text-foreground">Updates</Link>
+              <span className="mx-2">·</span>
+              <a href={CREATOR_X} target="_blank" rel="noreferrer" className="hover:text-foreground">
+                {CREATOR_HANDLE}
+              </a>
+            </p>
           </div>
         </footer>
       </body>

@@ -4,3 +4,10 @@ export const SITE_URL = (
 ).replace(/\/$/, "");
 
 export const SITE_NAME = "Open Icons";
+
+/** Figma plugin install URL — placeholder until the plugin is published. */
+export const FIGMA_PLUGIN_URL = "#";
+
+/** Creator's X / Twitter. */
+export const CREATOR_X = "https://x.com/rakibulism";
+export const CREATOR_HANDLE = "@rakibulism";

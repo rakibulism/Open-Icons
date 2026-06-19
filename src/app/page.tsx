@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { getIndex } from "@/lib/data";
+import PrimaryButton, { FigmaGlyph } from "@/components/PrimaryButton";
+import { FIGMA_PLUGIN_URL } from "@/lib/site";
 
 export const revalidate = 86400; // re-check upstream once a day
 
@@ -20,7 +22,7 @@ export default async function Home() {
           searchable in one place.
         </h1>
         <p className="mt-5 max-w-xl text-lg text-muted">
-          Browse {sets.length} of the best open-source icon packs. Copy the SVG,
+          Browse {sets.length}{" "}of the best open-source icon packs. Copy the SVG,
           download it, or grab a CDN link — instantly. Always synced with each
           pack&apos;s latest release.
         </p>
@@ -34,8 +36,17 @@ export default async function Home() {
             <path d="m21 21-4.3-4.3" />
           </svg>
           <span className="flex-1 text-base">Search all {total.toLocaleString()} icons…</span>
-          <kbd className="rounded border px-1.5 py-0.5 text-xs">/</kbd>
+          <kbd className="hidden rounded border px-1.5 py-0.5 text-xs sm:block">/</kbd>
         </Link>
+
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <PrimaryButton href={FIGMA_PLUGIN_URL} external>
+            <FigmaGlyph /> Install Figma plugin
+          </PrimaryButton>
+          <Link href="/docs" className="text-sm text-muted underline-offset-2 hover:text-foreground hover:underline">
+            Read the docs →
+          </Link>
+        </div>
       </section>
 
       {/* Set grid */}
