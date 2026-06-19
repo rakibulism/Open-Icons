@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import NotificationBell from "./NotificationBell";
+import ThemeMenu from "./ThemeMenu";
 import PrimaryButton, { FigmaGlyph } from "./PrimaryButton";
 import { FIGMA_PLUGIN_URL, SITE_URL, CREATOR_X, CREATOR_HANDLE } from "@/lib/site";
 
@@ -52,6 +53,7 @@ export default function SiteHeader() {
 
         {/* Desktop actions */}
         <div className="hidden items-center gap-1.5 md:flex">
+          <ThemeMenu />
           <NotificationBell />
           <div className="relative" ref={aboutRef}>
             <button
@@ -72,6 +74,7 @@ export default function SiteHeader() {
 
         {/* Mobile actions */}
         <div className="flex items-center gap-1 md:hidden">
+          <ThemeMenu />
           <NotificationBell />
           <button
             onClick={() => setMenuOpen((s) => !s)}

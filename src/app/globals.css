@@ -11,8 +11,20 @@
   --accent-foreground: #fafafa;
 }
 
+/* Dark palette — applied explicitly via [data-theme="dark"], and as the
+   device-default fallback before/without JS via prefers-color-scheme. */
+html[data-theme="dark"] {
+  --background: #0a0a0a;
+  --surface: #141414;
+  --foreground: #ededed;
+  --muted: #8a8a8a;
+  --border: #232323;
+  --border-strong: #333333;
+  --accent: #fafafa;
+  --accent-foreground: #0a0a0a;
+}
 @media (prefers-color-scheme: dark) {
-  :root {
+  html:not([data-theme]) {
     --background: #0a0a0a;
     --surface: #141414;
     --foreground: #ededed;
