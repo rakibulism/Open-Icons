@@ -187,6 +187,20 @@ function App() {
     [index],
   );
 
+  // Variants per set, derived from the icon data — so the plugin works even if
+  // the index's `sets[*].variants` field is absent (older deployments).
+  const variantsBySet = useMemo(() => {
+    const m: Record<string, string[]> = {};
+    if (index) {
+      for (const it of index.icons) {
+        const arr = m[it.s] ?? (m[it.s] = []);
+        for (const v of Object.keys(it.v)) if (!arr.includes(v)) arr.push(v);
+      }
+    }
+    return m;
+  }, [index]);
+  const variantsOf = (setId: string) => index?.sets[setId]?.variants ?? variantsBySet[setId] ?? [];
+
   // ---- Mode (auto: replace when selection, insert otherwise; manual override) ----
   const selCount = selection.length;
   const prevHadSel = useRef(false);
@@ -433,9 +447,9 @@ function App() {
             <option key={id} value={id}>{m.name}</option>
           ))}
         </select>
-        {cur && cur.variants.length > 1 && (
+        {cur && variantsOf(library).length > 1 && (
           <select className="select" value={variant ?? cur.defaultVariant} onChange={(e) => setVariant(e.target.value)}>
-            {cur.variants.map((v) => <option key={v} value={v}>{v}</option>)}
+            {variantsOf(library).map((v) => <option key={v} value={v}>{v}</option>)}
           </select>
         )}
         <div className="seg view">
