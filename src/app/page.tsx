@@ -4,6 +4,7 @@ import { getIndex, getSet } from "@/lib/data";
 import { cdnUrl } from "@/lib/sources";
 import IconImage from "@/components/IconImage";
 import Hero from "@/components/Hero";
+import { FAQS, faqLd, collectionLd } from "@/lib/structured-data";
 import type { SetManifest } from "@/lib/types";
 
 export const revalidate = 86400; // re-check upstream once a day
@@ -38,10 +39,19 @@ export default async function Home() {
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionLd(sets, total)) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd()) }}
+      />
+
       <Hero total={total} sets={sets.length} />
 
       {/* Set grid */}
-      <section className="mx-auto max-w-6xl px-5 pb-24">
+      <section className="mx-auto max-w-6xl px-5 pb-16">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
           <h2 className="font-sans text-sm font-medium uppercase tracking-wider text-muted">
             Icon packs
@@ -109,6 +119,21 @@ export default async function Home() {
             );
           })}
         </div>
+      </section>
+
+      {/* FAQ — visible answers that mirror the FAQPage structured data (AEO/GEO). */}
+      <section className="mx-auto max-w-3xl px-5 pb-24">
+        <h2 className="mb-6 text-2xl font-semibold tracking-tight sm:text-3xl">
+          Frequently asked questions
+        </h2>
+        <dl className="divide-y divide-border">
+          {FAQS.map((f) => (
+            <div key={f.q} className="py-5">
+              <dt className="font-sans text-base font-medium text-foreground">{f.q}</dt>
+              <dd className="mt-2 text-muted">{f.a}</dd>
+            </div>
+          ))}
+        </dl>
       </section>
     </>
   );

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Libertinus_Serif, Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import { SITE_URL, CREATOR_X, CREATOR_HANDLE } from "@/lib/site";
+import { siteGraph } from "@/lib/structured-data";
 import SearchHotkey from "@/components/SearchHotkey";
 import SiteHeader from "@/components/SiteHeader";
 import ServiceWorker from "@/components/ServiceWorker";
@@ -85,21 +86,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className="min-h-full flex flex-col">
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "WebSite",
-              name: "Open Icons",
-              url: SITE,
-              description:
-                "Browse and search thousands of free, open-source SVG icons across the best icon packs.",
-              potentialAction: {
-                "@type": "SearchAction",
-                target: `${SITE}/{set}`,
-                "query-input": "required name=set",
-              },
-            }),
-          }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(siteGraph()) }}
         />
         <SiteHeader />
 
