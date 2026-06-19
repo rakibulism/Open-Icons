@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import PrimaryButton from "./PrimaryButton";
+import HeroWater from "./HeroWater";
 
 type Audience = "designers" | "developers";
 
@@ -40,12 +41,10 @@ export default function Hero({ total, sets }: { total: number; sets: number }) {
 
   return (
     <section className="relative isolate overflow-hidden">
-      {/* Sunset sky background — fades out toward the bottom, sits low so the
-          content stays legible. Scales with the section (bg-cover) at any width. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 bg-[url('/brand/hero-bg.jpg')] bg-cover bg-center opacity-35 [mask-image:linear-gradient(to_bottom,black_0%,black_35%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,black_0%,black_35%,transparent_100%)]"
-      />
+      {/* Sunset sky background with a WebGL water-ripple effect on hover. Fades
+          out toward the bottom so the content stays legible; falls back to the
+          static image where WebGL2 isn't available. */}
+      <HeroWater className="pointer-events-none absolute inset-0 -z-10 opacity-35 [mask-image:linear-gradient(to_bottom,black_0%,black_35%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,black_0%,black_35%,transparent_100%)]" />
 
       <div className="mx-auto flex max-w-3xl flex-col items-center px-5 py-16 text-center sm:py-24">
       {/* Audience toggle */}
