@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useRef, useEffect, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import PrimaryButton from "./PrimaryButton";
 
@@ -9,6 +9,7 @@ type Audience = "designers" | "developers";
 export default function Hero({ total, sets }: { total: number; sets: number }) {
   const [aud, setAud] = useState<Audience>("designers");
   const [query, setQuery] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const isDesigner = aud === "designers";
 
@@ -17,6 +18,25 @@ export default function Hero({ total, sets }: { total: number; sets: number }) {
     const q = query.trim();
     router.push(q ? `/search?q=${encodeURIComponent(q)}` : "/search");
   }
+
+  // Press "/" to focus this search — intercept (capture phase) so the global
+  // hotkey doesn't navigate away to /search while we're on the home page.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+      const el = document.activeElement;
+      const typing =
+        el instanceof HTMLInputElement ||
+        el instanceof HTMLTextAreaElement ||
+        (el as HTMLElement | null)?.isContentEditable;
+      if (typing) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      inputRef.current?.focus();
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, []);
 
   return (
     <section className="relative isolate overflow-hidden">
@@ -55,19 +75,17 @@ export default function Hero({ total, sets }: { total: number; sets: number }) {
             <SearchIcon />
           </span>
           <input
+            ref={inputRef}
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={`Search ${total.toLocaleString()} icons across all packs…`}
             aria-label="Search all icons"
-            className="w-full rounded-2xl border bg-surface py-4 pl-12 pr-28 text-base shadow-sm outline-none transition-colors placeholder:text-muted focus:border-border-strong"
+            className="w-full rounded-2xl border bg-surface py-4 pl-12 pr-14 text-base shadow-sm outline-none transition-colors placeholder:text-muted focus:border-border-strong"
           />
-          <button
-            type="submit"
-            className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-accent-foreground transition-opacity hover:opacity-90"
-          >
-            Search
-          </button>
+          <kbd className="pointer-events-none absolute right-4 top-1/2 hidden h-6 min-w-[1.5rem] -translate-y-1/2 items-center justify-center rounded-md border bg-background px-1.5 font-sans text-xs text-muted sm:inline-flex">
+            /
+          </kbd>
         </div>
       </form>
 
