@@ -43,6 +43,30 @@ body {
 .status, .empty { color: var(--figma-color-text-secondary, #888); padding: 4px 12px; margin: 0; }
 .empty { padding: 24px 12px; text-align: center; }
 
+.panel {
+  border-bottom: 1px solid var(--figma-color-border, #e6e6e6);
+  background: var(--figma-color-bg-secondary, #f7f7f7);
+  padding: 10px 12px;
+}
+.panel-head {
+  font-weight: 600; font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.04em; color: var(--figma-color-text-secondary, #888);
+}
+.panel-sub { font-size: 11px; color: var(--figma-color-text-secondary, #888); margin: 8px 0 6px; }
+.ident { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.ident-thumb {
+  width: 32px; height: 32px; flex: 0 0 auto; display: grid; place-items: center;
+  border: 1px solid var(--figma-color-border, #e6e6e6); border-radius: 6px;
+  background: var(--figma-color-bg, #fff); padding: 5px;
+}
+.ident-thumb .thumb { width: 22px; height: 22px; }
+.ident-name { font-weight: 600; font-size: 13px; }
+.ident-sub { font-size: 11px; color: var(--figma-color-text-secondary, #888); }
+.grid.small {
+  display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; padding: 0;
+  max-height: 96px; overflow-y: auto;
+}
+
 .grid {
   flex: 1; overflow-y: auto;
   display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px;
