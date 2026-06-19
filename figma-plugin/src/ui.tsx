@@ -487,6 +487,11 @@ function App() {
 
       {/* Controls */}
       <div className="controls">
+        {library !== "all" && (
+          <button className="back-btn" title="Back to all libraries" onClick={() => setLibrary("all")}>
+            ← All
+          </button>
+        )}
         <div className="seg">
           <button className={mode === "insert" ? "on" : ""} onClick={() => setModeOverride("insert")}>Insert</button>
           <button className={mode === "replace" ? "on" : ""} onClick={() => setModeOverride("replace")}>Replace</button>
@@ -543,7 +548,10 @@ function App() {
                     <b>{m.name}</b>
                     <span>{(iconsBySet[id]?.length ?? 0).toLocaleString()} icons</span>
                   </div>
-                  <button className="chip" onClick={() => setLibrary(id)}>Browse →</button>
+                  <button className="btn-primary sm" onClick={() => setLibrary(id)}>
+                    <span className="btn-glow" />
+                    <span className="btn-label">Browse →</span>
+                  </button>
                 </div>
                 <div className="preview">
                   {(iconsBySet[id] ?? []).slice(0, PREVIEW).map((hit) => (

@@ -2,17 +2,17 @@
 html, body { margin: 0; padding: 0; height: 100%; }
 body {
   font-family: Inter, -apple-system, system-ui, sans-serif;
-  font-size: 12px;
+  font-size: var(--fs, 12px);
   background: var(--figma-color-bg, #fff);
   color: var(--figma-color-text, #111);
 }
 #root { height: 100%; }
 .app { display: flex; flex-direction: column; height: 100vh; position: relative; }
 
-/* Density → cell size */
-:root { --cell: 40px; }
-html[data-density="compact"] { --cell: 32px; }
-html[data-density="large"] { --cell: 52px; }
+/* Density → scales the whole plugin (cell size, font, spacing, controls) */
+:root { --cell: 40px; --fs: 12px; --pad: 8px; --ctl: 12px; }
+html[data-density="compact"] { --cell: 32px; --fs: 11px; --pad: 6px; --ctl: 10px; }
+html[data-density="large"] { --cell: 52px; --fs: 13px; --pad: 11px; --ctl: 14px; }
 
 /* Theme overrides (auto = Figma's injected vars) */
 html[data-theme="light"] {
@@ -29,7 +29,7 @@ html[data-theme="dark"] {
 }
 
 /* Header */
-.topbar { display: flex; gap: 6px; padding: 8px 10px 6px; }
+.topbar { display: flex; gap: 6px; padding: var(--pad) 10px calc(var(--pad) - 2px); }
 .search {
   flex: 1; min-width: 0;
   border: 1px solid var(--figma-color-border, #e6e6e6);
@@ -45,7 +45,7 @@ html[data-theme="dark"] {
 }
 
 /* Controls row */
-.controls { display: flex; gap: 6px; align-items: center; padding: 0 10px 8px; flex-wrap: wrap; }
+.controls { display: flex; gap: 6px; align-items: center; padding: 0 10px var(--pad); flex-wrap: wrap; }
 .seg {
   display: inline-flex; border: 1px solid var(--figma-color-border, #e6e6e6);
   border-radius: 6px; overflow: hidden;
@@ -61,6 +61,19 @@ html[data-theme="dark"] {
   background: var(--figma-color-bg, #fff); color: inherit;
   border-radius: 6px; padding: 5px 6px; font-size: 11px; max-width: 130px;
 }
+
+/* Back-to-all button (inside a package) */
+.back-btn {
+  display: inline-flex; align-items: center; gap: 2px;
+  border: 1px solid var(--figma-color-border, #e6e6e6);
+  background: var(--figma-color-bg, #fff); color: inherit;
+  border-radius: 6px; padding: 5px 9px; cursor: pointer; font-size: 11px; font-weight: 500;
+}
+.back-btn:hover { border-color: var(--figma-color-border-selected, #0d99ff); }
+
+/* Compact primary button (home Browse buttons) */
+.btn-primary.sm { padding: 6px 13px; border-radius: 40px; }
+.btn-primary.sm .btn-label { font-size: 11px; }
 
 /* Size control */
 .sizes { display: inline-flex; align-items: center; gap: 3px; }
@@ -129,7 +142,7 @@ html[data-theme="dark"] {
   border-radius: 6px; cursor: pointer; padding: 6px;
 }
 .cell:hover { border-color: var(--figma-color-border-selected, #0d99ff); }
-.thumb { width: 20px; height: 20px; display: inline-block; }
+.thumb { width: calc(var(--cell) * 0.5); height: calc(var(--cell) * 0.5); display: inline-block; }
 .badge {
   position: absolute; bottom: 1px; right: 2px; font-size: 8px; line-height: 1;
   color: var(--figma-color-text-secondary, #888);

@@ -145,7 +145,7 @@ export const SOURCES: IconSource[] = [
     },
   },
 
-  // 7. Bootstrap Icons — /icons/<name>.svg
+  // 7. Bootstrap Icons — /icons/<name>.svg, with "<name>-fill.svg" = filled
   {
     id: "bootstrap",
     name: "Bootstrap Icons",
@@ -154,13 +154,19 @@ export const SOURCES: IconSource[] = [
     license: { name: "MIT", url: "https://github.com/twbs/icons/blob/main/LICENSE" },
     homepage: "https://icons.getbootstrap.com",
     repoUrl: "https://github.com/twbs/icons",
-    defaultVariant: "default",
-    variants: ["default"],
+    defaultVariant: "outline",
+    variants: ["outline", "fill"],
     parse(path) {
       if (!isSvg(path)) return null;
       const p = parts(path);
       if (p.length !== 2 || p[0] !== "icons") return null;
-      return { name: baseName(path), variant: "default", path };
+      let name = baseName(path);
+      let variant = "outline";
+      if (name.endsWith("-fill")) {
+        variant = "fill";
+        name = name.slice(0, -5);
+      }
+      return { name, variant, path };
     },
   },
 
