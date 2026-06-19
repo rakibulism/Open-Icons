@@ -112,7 +112,9 @@ function App() {
 
   const [fingerprints, setFingerprints] = useState<Record<string, string> | null>(null);
   const [shapeMatches, setShapeMatches] = useState<{ hit: Hit; score: number }[]>([]);
-  const fpFetching = useRef(false);
+  const fpCacheRef = useRef<Record<string, string> | null>(null);
+  const fpPromiseRef = useRef<Promise<Record<string, string>> | null>(null);
+  const [swapping, setSwapping] = useState(false);
 
   // ---- Sandbox messages ----
   useEffect(() => {
@@ -298,15 +300,27 @@ function App() {
     nameGuesses.length === 0 &&
     selectionSvgText
   );
-  useEffect(() => {
-    if (!needShape || fingerprints || fpFetching.current) return;
-    fpFetching.current = true;
-    fetch(`${DATA_URL}/data/fingerprints.json`)
+  // Load the fingerprint index once (lazy) — used for shape detection AND for
+  // best-match batch swapping.
+  function ensureFingerprints(): Promise<Record<string, string>> {
+    if (fpCacheRef.current) return Promise.resolve(fpCacheRef.current);
+    if (fpPromiseRef.current) return fpPromiseRef.current;
+    const p = fetch(`${DATA_URL}/data/fingerprints.json`)
       .then((r) => (r.ok ? r.json() : {}))
-      .then((d) => setFingerprints(d as Record<string, string>))
-      .catch(() => setFingerprints({}))
-      .finally(() => (fpFetching.current = false));
-  }, [needShape, fingerprints]);
+      .catch(() => ({}))
+      .then((d) => {
+        const map = d as Record<string, string>;
+        fpCacheRef.current = map;
+        setFingerprints(map);
+        return map;
+      });
+    fpPromiseRef.current = p;
+    return p;
+  }
+
+  useEffect(() => {
+    if (needShape) void ensureFingerprints();
+  }, [needShape]);
   useEffect(() => {
     if (!needShape || !fingerprints || !index || !selectionSvgText) return setShapeMatches([]);
     const sig = fingerprint(selectionSvgText);
@@ -378,29 +392,61 @@ function App() {
     }
   }
 
-  // Library swap targets for the batch swap panel.
+  // Best shape match for `srcKey` (a "set:name") within a target library.
+  function bestShapeMatch(srcKey: string, targetLib: string, fp: Record<string, string>): Hit | null {
+    const src = fp[srcKey];
+    const pool = iconsBySet[targetLib];
+    if (!src || !pool) return null;
+    let best: Hit | null = null;
+    let bestScore = -1;
+    for (const hit of pool) {
+      const sig = fp[keyOf(hit)];
+      if (!sig) continue;
+      const s = similarity(src, sig);
+      if (s > bestScore) {
+        bestScore = s;
+        best = hit;
+      }
+    }
+    return best;
+  }
+
+  // Every library is a swap target (exact name where possible, else closest by
+  // shape). The count shown is exact name matches — a quality hint.
   const swapTargets = useMemo(() => {
     if (!index || identified.length < 2) return [];
     return setEntries
-      .map(([id, meta]) => {
-        const matched = identified.filter((d) => byKey.has(`${id}:${normalizeNameTo(id, d.meta.name)}`));
-        return { id, name: meta.name, matched: matched.length };
-      })
-      .filter((t) => t.matched > 0)
-      .sort((a, b) => b.matched - a.matched);
-    // exact name in target lib (icon names are shared kebab slugs across packs)
-    function normalizeNameTo(_lib: string, name: string) {
-      return name;
-    }
+      .map(([id, meta]) => ({
+        id,
+        name: meta.name,
+        exact: identified.filter((d) => byKey.has(`${id}:${d.meta.name}`)).length,
+      }))
+      .sort((a, b) => b.exact - a.exact);
   }, [index, identified, setEntries, byKey]);
 
-  function batchSwap(targetLib: string) {
-    const entries = identified
-      .map((d) => {
-        const hit = byKey.get(`${targetLib}:${d.meta.name}`);
-        return hit ? { id: d.node.id, hit, v: index!.sets[targetLib].defaultVariant } : null;
-      })
-      .filter((e): e is { id: string; hit: Hit; v: string } => !!e);
+  async function batchSwap(targetLib: string) {
+    if (!index) return;
+    const dv = index.sets[targetLib].defaultVariant;
+    const entries: { id: string; hit: Hit; v: string }[] = [];
+    const pending: { id: string; key: string }[] = [];
+
+    for (const d of identified) {
+      const exact = byKey.get(`${targetLib}:${d.meta.name}`);
+      if (exact) entries.push({ id: d.node.id, hit: exact, v: dv });
+      else pending.push({ id: d.node.id, key: `${d.meta.set}:${d.meta.name}` });
+    }
+
+    // Fill the non-exact ones with the closest icon by shape.
+    if (pending.length) {
+      setSwapping(true);
+      const fp = await ensureFingerprints();
+      for (const p of pending) {
+        const best = bestShapeMatch(p.key, targetLib, fp);
+        if (best) entries.push({ id: p.id, hit: best, v: dv });
+      }
+      setSwapping(false);
+    }
+
     if (entries.length) replaceNodes(entries);
   }
 
@@ -618,15 +664,24 @@ function App() {
     if (identified.length >= 2) {
       return (
         <div className="panel">
-          <div className="panel-head">{identified.length} icons selected — swap all to</div>
+          <div className="panel-head">
+            {identified.length} icons selected — swap all to{swapping ? " · matching…" : ""}
+          </div>
           <div className="chips">
             {swapTargets.map((t) => (
-              <button key={t.id} className="chip" onClick={() => batchSwap(t.id)}>
-                {index!.sets[t.id].name} <span className="count">{t.matched}/{identified.length}</span>
+              <button
+                key={t.id}
+                className="chip"
+                title={`Swap all ${identified.length} to ${index!.sets[t.id].name} (${t.exact} exact${t.exact < identified.length ? `, ${identified.length - t.exact} by shape` : ""})`}
+                onClick={() => batchSwap(t.id)}
+              >
+                {index!.sets[t.id].name} <span className="count">{t.exact}/{identified.length}</span>
               </button>
             ))}
-            {swapTargets.length === 0 && <span className="ident-sub">No other library has these icon names.</span>}
           </div>
+          <p className="ident-sub" style={{ marginTop: 6 }}>
+            Best name match, then closest by shape — every selected icon is swapped.
+          </p>
         </div>
       );
     }
