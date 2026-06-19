@@ -67,7 +67,7 @@ export default function SiteHeader() {
             </button>
             {aboutOpen && <AboutCard />}
           </div>
-          <PrimaryButton href={FIGMA_PLUGIN_URL} external className="oi-btn-sm ml-1">
+          <PrimaryButton href={FIGMA_PLUGIN_URL} external size="sm" className="ml-1">
             <FigmaGlyph /> Install plugin
           </PrimaryButton>
         </div>

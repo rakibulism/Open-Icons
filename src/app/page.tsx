@@ -13,7 +13,7 @@ export default async function Home() {
 
       {/* Set grid */}
       <section className="pb-24">
-        <h2 className="mb-5 text-sm font-medium uppercase tracking-wider text-muted">
+        <h2 className="mb-5 font-sans text-sm font-medium uppercase tracking-wider text-muted">
           Icon packs
         </h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">

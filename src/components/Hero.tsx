@@ -2,13 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { FigmaGlyph } from "./PrimaryButton";
+import PrimaryButton, { FigmaGlyph } from "./PrimaryButton";
 import { FIGMA_PLUGIN_URL } from "@/lib/site";
 
 type Audience = "designers" | "developers";
-
-const DARK_BTN =
-  "inline-flex items-center gap-2 rounded-xl bg-foreground px-5 py-3 text-sm font-medium text-background transition-opacity hover:opacity-90";
 
 export default function Hero({ total, sets }: { total: number; sets: number }) {
   const [aud, setAud] = useState<Audience>("designers");
@@ -39,13 +36,13 @@ export default function Hero({ total, sets }: { total: number; sets: number }) {
       {/* CTAs */}
       <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
         {isDesigner ? (
-          <a href={FIGMA_PLUGIN_URL} target="_blank" rel="noreferrer" className={DARK_BTN}>
+          <PrimaryButton href={FIGMA_PLUGIN_URL} external>
             <FigmaGlyph /> Install Figma plugin
-          </a>
+          </PrimaryButton>
         ) : (
-          <Link href="/docs" className={DARK_BTN}>
+          <PrimaryButton href="/docs">
             Read the docs <Arrow />
-          </Link>
+          </PrimaryButton>
         )}
         <Link
           href="/search"

@@ -2,9 +2,9 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 /**
- * The site's primary CTA — a dark gradient pill with layered shadows and a
- * slowly-rotating rainbow conic-gradient glow. Styles live in globals.css
- * (.oi-btn-primary). Renders as a Next Link, an external anchor, or a button.
+ * The site's primary CTA — a simple solid dark button (adapts to the theme:
+ * dark on light, light on dark). Renders as a Next Link, external anchor, or
+ * button.
  */
 export default function PrimaryButton({
   href,
@@ -12,38 +12,36 @@ export default function PrimaryButton({
   children,
   className = "",
   ariaLabel,
+  size = "md",
 }: {
   href?: string;
   external?: boolean;
   children: ReactNode;
   className?: string;
   ariaLabel?: string;
+  size?: "sm" | "md";
 }) {
-  const inner = (
-    <>
-      <span className="oi-btn-glow" aria-hidden />
-      <span className="oi-btn-label">{children}</span>
-    </>
-  );
-  const cls = `oi-btn-primary ${className}`.trim();
+  const sizeCls = size === "sm" ? "px-3.5 py-2 text-[13px]" : "px-5 py-3 text-sm";
+  const cls =
+    `inline-flex items-center justify-center gap-2 rounded-xl bg-foreground font-medium text-background transition-opacity hover:opacity-90 ${sizeCls} ${className}`.trim();
 
   if (href && external) {
     return (
       <a href={href} target="_blank" rel="noreferrer" className={cls} aria-label={ariaLabel}>
-        {inner}
+        {children}
       </a>
     );
   }
   if (href) {
     return (
       <Link href={href} className={cls} aria-label={ariaLabel}>
-        {inner}
+        {children}
       </Link>
     );
   }
   return (
     <button className={cls} aria-label={ariaLabel}>
-      {inner}
+      {children}
     </button>
   );
 }
