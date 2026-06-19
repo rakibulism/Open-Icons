@@ -10,6 +10,34 @@ export type Update = {
 export const UPDATES: Update[] = [
   {
     date: "2026-06-20",
+    title: "A bolder identity",
+    summary:
+      "A vivid orange (#FF3D03) is now the brand color across buttons, accents and chips — matched to the logo. The home page leads with a warm sunset hero.",
+    tag: "improved",
+  },
+  {
+    date: "2026-06-20",
+    title: "Redesigned icon-pack cards",
+    summary:
+      "Each pack now previews real sample icons on a fanned set of tiles that spread into a row on hover, over a soft gradient panel.",
+    tag: "improved",
+  },
+  {
+    date: "2026-06-20",
+    title: "Search from the home page",
+    summary:
+      "A full-width search bar sits right in the hero — press / to focus it, type, and jump straight into results across every pack.",
+    tag: "new",
+  },
+  {
+    date: "2026-06-20",
+    title: "Water-ripple hero",
+    summary:
+      "Move your cursor over the hero and the sunset ripples beneath it — a lightweight WebGL effect that falls back to the still image where unsupported.",
+    tag: "new",
+  },
+  {
+    date: "2026-06-20",
     title: "Doodle Icons — a 14th pack",
     summary:
       "451 hand-drawn icons join the library, bringing it to 14 packs and ~17,745 icons. Bundled and served from Open Icons itself.",

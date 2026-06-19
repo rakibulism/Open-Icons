@@ -3,6 +3,36 @@
 All notable changes to Open Icons are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] — 2026-06-20
+
+A visual refresh of the website: a bolder brand color, redesigned pack cards,
+a sunset hero with a water-ripple effect, and search built into the home page.
+
+### Brand & look
+
+- **New brand color** — a vivid orange (`#FF3D03`), matched to the logo, drives
+  buttons, accents and chips across the site. Primary buttons are now orange.
+- **Sunset hero** — a warm sky background sits behind the hero, faded out toward
+  the bottom so content stays legible; scalable and responsive at any width.
+- **Water-ripple hero** — a lightweight WebGL2 effect ripples the hero
+  background as the cursor moves over it (hero only), idling when inactive and
+  degrading gracefully to the static image where WebGL2 isn't available.
+
+### Icon-pack cards
+
+- Redesigned as two-zone cards: a soft gradient panel previewing **real sample
+  icons** from each pack on **fanned tiles** that spread into a straight row on
+  hover, above a clean body with the name, count and license.
+- Variant chips restyled as **transparent orange**; cards stay put on hover
+  (no shadow or position shift).
+
+### Hero & search
+
+- A **full-width search bar** now lives in the hero — `/` focuses it, a clear
+  (×) button appears while typing, and submitting jumps to `/search?q=…`.
+- Moved the library stat line to the right of the **Icon packs** heading and
+  removed the redundant hero install button (still in the header).
+
 ## [0.2.0] — 2026-06-20
 
 A big one — a 14th icon pack, a completely rebuilt Figma plugin, a fresh visual
