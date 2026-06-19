@@ -42,9 +42,15 @@ export default async function Home() {
 
       {/* Set grid */}
       <section className="mx-auto max-w-6xl px-5 pb-24">
-        <h2 className="mb-5 font-sans text-sm font-medium uppercase tracking-wider text-muted">
-          Icon packs
-        </h2>
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+          <h2 className="font-sans text-sm font-medium uppercase tracking-wider text-muted">
+            Icon packs
+          </h2>
+          <span className="inline-flex items-center gap-2 text-sm text-muted">
+            <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+            {total.toLocaleString()} icons · {sets.length} packs · live from source
+          </span>
+        </div>
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {sets.map((set, i) => {
             const srcs = manifests[i] ? previewSrcs(manifests[i]!) : [];

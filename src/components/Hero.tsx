@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import PrimaryButton, { FigmaGlyph } from "./PrimaryButton";
-import { FIGMA_PLUGIN_URL } from "@/lib/site";
+import PrimaryButton from "./PrimaryButton";
 
 type Audience = "designers" | "developers";
 
@@ -43,11 +42,7 @@ export default function Hero({ total, sets }: { total: number; sets: number }) {
 
       {/* CTAs */}
       <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-        {isDesigner ? (
-          <PrimaryButton href={FIGMA_PLUGIN_URL} external>
-            <FigmaGlyph /> Install Figma plugin
-          </PrimaryButton>
-        ) : (
+        {!isDesigner && (
           <PrimaryButton href="/docs">
             Read the docs <Arrow />
           </PrimaryButton>
@@ -58,12 +53,6 @@ export default function Hero({ total, sets }: { total: number; sets: number }) {
         >
           <SearchIcon /> Search all icons
         </Link>
-      </div>
-
-      {/* Brand status pill — slightly translucent orange with a dark label */}
-      <div className="mt-9 inline-flex items-center gap-2 rounded-full bg-accent/80 px-4 py-1.5 text-sm font-medium text-[#1a2018]">
-        <span className="h-1.5 w-1.5 rounded-full bg-[#1a2018]/50" />
-        {total.toLocaleString()} icons · {sets} packs · live from source
       </div>
       </div>
     </section>
