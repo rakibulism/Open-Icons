@@ -2,8 +2,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 /**
- * The site's primary CTA — a simple solid dark button (adapts to the theme:
- * dark on light, light on dark). Renders as a Next Link, external anchor, or
+ * The site's primary CTA — a simple solid button in the brand accent color
+ * (#ff3d03) with white label. Renders as a Next Link, external anchor, or
  * button.
  */
 export default function PrimaryButton({
@@ -23,7 +23,7 @@ export default function PrimaryButton({
 }) {
   const sizeCls = size === "sm" ? "px-3.5 py-2 text-[13px]" : "px-5 py-3 text-sm";
   const cls =
-    `inline-flex items-center justify-center gap-2 rounded-xl bg-foreground font-medium text-background transition-opacity hover:opacity-90 ${sizeCls} ${className}`.trim();
+    `inline-flex items-center justify-center gap-2 rounded-xl bg-accent font-medium text-accent-foreground transition-opacity hover:opacity-90 ${sizeCls} ${className}`.trim();
 
   if (href && external) {
     return (

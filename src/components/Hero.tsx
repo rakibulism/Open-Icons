@@ -52,9 +52,9 @@ export default function Hero({ total, sets }: { total: number; sets: number }) {
         </Link>
       </div>
 
-      {/* Lime status pill */}
-      <div className="mt-9 inline-flex items-center gap-2 rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-accent-foreground">
-        <span className="h-1.5 w-1.5 rounded-full bg-accent-foreground/70" />
+      {/* Brand status pill — soft orange-tinted label on the orange accent */}
+      <div className="mt-9 inline-flex items-center gap-2 rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-[#ffd9c9]">
+        <span className="h-1.5 w-1.5 rounded-full bg-[#ffd9c9]/80" />
         {total.toLocaleString()} icons · {sets} packs · live from source
       </div>
     </section>
