@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { getIndex } from "@/lib/data";
-import PrimaryButton, { FigmaGlyph } from "@/components/PrimaryButton";
-import { FIGMA_PLUGIN_URL } from "@/lib/site";
+import Hero from "@/components/Hero";
 
 export const revalidate = 86400; // re-check upstream once a day
 
@@ -10,44 +9,7 @@ export default async function Home() {
 
   return (
     <div className="mx-auto max-w-6xl px-5">
-      {/* Hero */}
-      <section className="py-16 sm:py-24">
-        <p className="mb-4 inline-flex items-center gap-2 rounded-full border bg-surface px-3 py-1 text-xs font-medium text-muted">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-          {total.toLocaleString()} icons · live from source · nothing stored
-        </p>
-        <h1 className="max-w-3xl text-4xl font-semibold tracking-tight sm:text-6xl">
-          Every open-source icon,
-          <br />
-          searchable in one place.
-        </h1>
-        <p className="mt-5 max-w-xl text-lg text-muted">
-          Browse {sets.length}{" "}of the best open-source icon packs. Copy the SVG,
-          download it, or grab a CDN link — instantly. Always synced with each
-          pack&apos;s latest release.
-        </p>
-
-        <Link
-          href="/search"
-          className="mt-8 flex max-w-xl items-center gap-3 rounded-xl border bg-surface px-5 py-4 text-muted transition-colors hover:border-border-strong"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.3-4.3" />
-          </svg>
-          <span className="flex-1 text-base">Search all {total.toLocaleString()} icons…</span>
-          <kbd className="hidden rounded border px-1.5 py-0.5 text-xs sm:block">/</kbd>
-        </Link>
-
-        <div className="mt-6 flex flex-wrap items-center gap-3">
-          <PrimaryButton href={FIGMA_PLUGIN_URL} external>
-            <FigmaGlyph /> Install Figma plugin
-          </PrimaryButton>
-          <Link href="/docs" className="text-sm text-muted underline-offset-2 hover:text-foreground hover:underline">
-            Read the docs →
-          </Link>
-        </div>
-      </section>
+      <Hero total={total} sets={sets.length} />
 
       {/* Set grid */}
       <section className="pb-24">
