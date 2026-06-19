@@ -7,7 +7,7 @@ https://github.com/Remix-Design/RemixIcon
 https://github.com/google/material-design-icons
 https://github.com/tailwindlabs/heroicons
 https://github.com/lucide-icons/lucide
-streamline icons api key: see secrets.local (gitignored)
+streamline icons api key: see .env → STREAMLINE_ICONS_API_KEY (gitignored)
 https://github.com/twbs/icons
 https://github.com/akveo/eva-icons
 https://github.com/tabler/tabler-icons
