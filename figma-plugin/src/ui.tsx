@@ -25,9 +25,18 @@ type Hit = { n: string; s: string; v: Record<string, string> };
 type Index = { total: number; sets: Record<string, SetMeta>; icons: Hit[] };
 type IconMeta = { set: string; name: string; variant: string };
 type Detected = { set: string; name: string; variant?: string } | null;
-type SelNode = { id: string; name: string; detected: Detected };
+type SelNode = { id: string; name: string; detected: Detected; w: number; h: number };
 type Ref = { s: string; n: string };
-type Settings = { naming: boolean; shapeDetect: boolean };
+type Settings = {
+  naming: boolean;
+  shapeDetect: boolean;
+  theme: "auto" | "light" | "dark";
+  density: "compact" | "default" | "large";
+};
+
+const SIZE_PRESETS = [16, 24, 32, 48, 64];
+const SITE_URL = "https://open-icons.vercel.app";
+const CREATOR_X = "https://x.com/rakibulism";
 
 function post(msg: unknown) {
   parent.postMessage({ pluginMessage: msg }, "*");
@@ -84,7 +93,14 @@ function App() {
   const [limit, setLimit] = useState(PAGE);
   const [modeOverride, setModeOverride] = useState<"insert" | "replace" | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settings, setSettings] = useState<Settings>({ naming: true, shapeDetect: true });
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const [size, setSize] = useState(24);
+  const [settings, setSettings] = useState<Settings>({
+    naming: true,
+    shapeDetect: true,
+    theme: "auto",
+    density: "default",
+  });
 
   const [selection, setSelection] = useState<SelNode[]>([]);
   const [selectionSvgText, setSelectionSvgText] = useState<string | null>(null);
@@ -152,11 +168,23 @@ function App() {
     };
   }, []);
 
+  // Apply theme + density to the document root.
+  useEffect(() => {
+    document.documentElement.dataset.theme = settings.theme;
+    document.documentElement.dataset.density = settings.density;
+  }, [settings.theme, settings.density]);
+
   // Reset the variant when the library changes.
   useEffect(() => {
     if (!index || library === "all") return setVariant(null);
     setVariant(index.sets[library]?.defaultVariant ?? null);
   }, [library, index]);
+
+  // Auto-fill the size from the selected logo / frame (first node).
+  useEffect(() => {
+    const n = selection[0];
+    if (n && (n.w || n.h)) setSize(Math.max(1, Math.round(Math.max(n.w, n.h))));
+  }, [selection]);
 
   // Reset the render window when the grid contents change.
   useEffect(() => setLimit(PAGE), [query, library, view]);
@@ -320,7 +348,7 @@ function App() {
   async function doInsert(hit: Hit, v: string) {
     try {
       const svg = await fetch(urlFor(index!.sets[hit.s], hit, v)).then((r) => r.text());
-      post({ type: "insert-svg", svg, meta: { set: hit.s, name: hit.n, variant: v } });
+      post({ type: "insert-svg", svg, meta: { set: hit.s, name: hit.n, variant: v }, size });
       addRecent(hit);
     } catch {
       setStatus("Couldn't fetch that icon — try again.");
@@ -336,7 +364,7 @@ function App() {
       if (cached === undefined) cache.set(url, svg);
       items.push({ id: e.id, svg, meta: { set: e.hit.s, name: e.hit.n, variant: e.v } });
     }
-    if (items.length) post({ type: "replace-batch", items });
+    if (items.length) post({ type: "replace-batch", items, size });
     const seen = new Set<string>();
     for (const e of entries) if (!seen.has(keyOf(e.hit))) (seen.add(keyOf(e.hit)), addRecent(e.hit));
   }
@@ -413,27 +441,47 @@ function App() {
             library === "all" ? `Search ${index.total.toLocaleString()} icons…` : `Search ${cur?.name}…`
           }
         />
-        <button className="iconbtn" title="Settings" onClick={() => setSettingsOpen((s) => !s)}>⚙</button>
+        <button className="iconbtn" title="Settings" onClick={() => { setSettingsOpen((s) => !s); setAboutOpen(false); }}>⚙</button>
+        <button className="iconbtn" title="About" onClick={() => { setAboutOpen((s) => !s); setSettingsOpen(false); }}>⋯</button>
       </div>
 
       {settingsOpen && (
         <div className="settings">
+          <div className="set-row">
+            <span>Theme</span>
+            <select className="select" value={settings.theme} onChange={(e) => updateSettings({ theme: e.target.value as Settings["theme"] })}>
+              <option value="auto">Device default</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </div>
+          <div className="set-row">
+            <span>Density</span>
+            <select className="select" value={settings.density} onChange={(e) => updateSettings({ density: e.target.value as Settings["density"] })}>
+              <option value="compact">Compact</option>
+              <option value="default">Default</option>
+              <option value="large">Large</option>
+            </select>
+          </div>
           <label className="toggle">
-            <input
-              type="checkbox"
-              checked={settings.naming}
-              onChange={(e) => updateSettings({ naming: e.target.checked })}
-            />
+            <input type="checkbox" checked={settings.naming} onChange={(e) => updateSettings({ naming: e.target.checked })} />
             Name layers as <code>library/icon</code>
           </label>
           <label className="toggle">
-            <input
-              type="checkbox"
-              checked={settings.shapeDetect}
-              onChange={(e) => updateSettings({ shapeDetect: e.target.checked })}
-            />
+            <input type="checkbox" checked={settings.shapeDetect} onChange={(e) => updateSettings({ shapeDetect: e.target.checked })} />
             Identify unknown icons by shape
           </label>
+        </div>
+      )}
+
+      {aboutOpen && (
+        <div className="settings about">
+          <div className="about-title">Open Icons</div>
+          <a className="btn-primary" href={SITE_URL} target="_blank" rel="noreferrer">
+            <span className="btn-glow" />
+            <span className="btn-label">Visit {SITE_URL.replace("https://", "")} ↗</span>
+          </a>
+          <a className="about-link" href={CREATOR_X} target="_blank" rel="noreferrer">Made by @rakibulism on X →</a>
         </div>
       )}
 
@@ -458,6 +506,28 @@ function App() {
           <button className={view === "library" ? "on" : ""} onClick={() => setView("library")} title="Library">▦</button>
           <button className={view === "recent" ? "on" : ""} onClick={() => setView("recent")} title="Recent">↺</button>
           <button className={view === "favorites" ? "on" : ""} onClick={() => setView("favorites")} title="Favorites">★</button>
+        </div>
+
+        {/* Size control: presets + custom px (Shift+Arrow nudges by 4) */}
+        <div className="sizes">
+          {SIZE_PRESETS.map((s) => (
+            <button key={s} className={`chip ${size === s ? "active" : ""}`} onClick={() => setSize(s)}>{s}</button>
+          ))}
+          <input
+            className="size-input"
+            type="number"
+            min={1}
+            value={size}
+            title="Size in px — Shift+↑/↓ nudges by 4"
+            onChange={(e) => setSize(Math.max(1, Math.round(Number(e.target.value) || 1)))}
+            onKeyDown={(e) => {
+              if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+              e.preventDefault();
+              const step = e.shiftKey ? 4 : 1;
+              setSize((v) => Math.max(1, v + (e.key === "ArrowUp" ? step : -step)));
+            }}
+          />
+          <span className="px">px</span>
         </div>
       </div>
 

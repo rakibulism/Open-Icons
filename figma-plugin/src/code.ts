@@ -19,10 +19,15 @@ const LISTS_KEY = "open-icons:lists"; // { favorites, recents }
 const DATA_KEY = "openIcons"; // pluginData namespace on inserted nodes
 
 type IconMeta = { set: string; name: string; variant: string };
-type Settings = { naming: boolean; shapeDetect: boolean };
+type Settings = {
+  naming: boolean;
+  shapeDetect: boolean;
+  theme: "auto" | "light" | "dark";
+  density: "compact" | "default" | "large";
+};
 type Lists = { favorites: unknown[]; recents: unknown[] };
 
-let settings: Settings = { naming: true, shapeDetect: true };
+let settings: Settings = { naming: true, shapeDetect: true, theme: "auto", density: "default" };
 
 const NAME_RE = /^([a-z0-9][a-z0-9-]*)\/(.+)$/i;
 
@@ -35,6 +40,21 @@ figma.showUI(__html__, { width: 400, height: 620, themeColors: true });
 function applyMeta(node: BaseNode & { name: string }, meta: IconMeta) {
   node.name = settings.naming ? `${meta.set}/${meta.name}` : meta.name;
   node.setPluginData(DATA_KEY, JSON.stringify(meta));
+}
+
+/**
+ * Make an inserted icon frame behave well: clip its contents, lock aspect ratio
+ * ("scale"), let the content scale with the frame, and size it square.
+ */
+function applyFrameProps(frame: FrameNode, size: number) {
+  for (const child of frame.children) {
+    if ("constraints" in child) {
+      (child as SceneNode & ConstraintMixin).constraints = { horizontal: "SCALE", vertical: "SCALE" };
+    }
+  }
+  frame.clipsContent = true;
+  frame.constrainProportions = true;
+  if (size > 0) frame.resize(size, size);
 }
 
 function placeAtCenter(node: SceneNode) {
@@ -61,13 +81,18 @@ function identify(node: BaseNode): IconMeta | { set: string; name: string } | nu
   return null;
 }
 
-/** Replace one node in place with new SVG, preserving footprint + slot. */
-function replaceNode(old: SceneNode, svg: string, meta: IconMeta): SceneNode {
+/** Replace one node in place with new SVG, at `size` (square), preserving slot. */
+function replaceNode(old: SceneNode, svg: string, meta: IconMeta, size: number): SceneNode {
   const node = figma.createNodeFromSvg(svg);
   applyMeta(node, meta);
+  applyFrameProps(node, size);
+  // Center the new (square) node over the old node's footprint.
   node.x = old.x;
   node.y = old.y;
-  if ("width" in old && "resize" in node) node.resize(old.width, old.height);
+  if ("width" in old) {
+    node.x = Math.round(old.x + (old.width - node.width) / 2);
+    node.y = Math.round(old.y + (old.height - node.height) / 2);
+  }
   const parent = old.parent;
   if (parent) {
     const index = parent.children.indexOf(old);
@@ -88,6 +113,8 @@ async function sendSelection() {
     id: n.id,
     name: n.name,
     detected: identify(n),
+    w: "width" in n ? Math.round(n.width) : 0,
+    h: "height" in n ? Math.round(n.height) : 0,
   }));
 
   // Export an SVG only for a single, unidentified node (for shape matching).
@@ -113,8 +140,8 @@ type UiMessage =
   | { type: "get-selection" }
   | { type: "get-lists" }
   | { type: "set-lists"; lists: Lists }
-  | { type: "insert-svg"; svg: string; meta: IconMeta }
-  | { type: "replace-batch"; items: { id: string; svg: string; meta: IconMeta }[] }
+  | { type: "insert-svg"; svg: string; meta: IconMeta; size: number }
+  | { type: "replace-batch"; items: { id: string; svg: string; meta: IconMeta }[]; size: number }
   | { type: "resize"; width: number; height: number }
   | { type: "close" };
 
@@ -150,6 +177,7 @@ figma.ui.onmessage = async (msg: UiMessage) => {
       try {
         const node = figma.createNodeFromSvg(msg.svg);
         applyMeta(node, msg.meta);
+        applyFrameProps(node, msg.size);
         placeAtCenter(node);
         figma.currentPage.selection = [node];
         figma.viewport.scrollAndZoomIntoView([node]);
@@ -168,7 +196,7 @@ figma.ui.onmessage = async (msg: UiMessage) => {
         for (const old of snapshot) {
           const it = items.get(old.id);
           if (!it) continue;
-          fresh.push(replaceNode(old, it.svg, it.meta));
+          fresh.push(replaceNode(old, it.svg, it.meta, msg.size));
         }
         if (fresh.length) {
           figma.currentPage.selection = fresh;
