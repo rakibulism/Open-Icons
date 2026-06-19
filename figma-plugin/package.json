@@ -1,6 +1,6 @@
 {
   "name": "open-icons-figma-plugin",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Search and insert open-source icons into Figma — powered by Open Icons.",
   "scripts": {

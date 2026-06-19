@@ -9,6 +9,34 @@ export type Update = {
 
 export const UPDATES: Update[] = [
   {
+    date: "2026-06-20",
+    title: "Doodle Icons — a 14th pack",
+    summary:
+      "451 hand-drawn icons join the library, bringing it to 14 packs and ~17,745 icons. Bundled and served from Open Icons itself.",
+    tag: "new",
+  },
+  {
+    date: "2026-06-20",
+    title: "Rebuilt Figma plugin",
+    summary:
+      "Browse-first home, size controls, light/dark/device themes, pack & shape detection of a selection, and one-click pack swaps — including swapping a whole multi-selection at once.",
+    tag: "improved",
+  },
+  {
+    date: "2026-06-20",
+    title: "A fresh look",
+    summary:
+      "A warm new palette with a lime accent, Libertinus Serif titles, a redesigned hero, and a Light / Dark / Device theme switcher across the site.",
+    tag: "improved",
+  },
+  {
+    date: "2026-06-20",
+    title: "Installable PWA + Bootstrap variants",
+    summary:
+      "Open Icons is now installable as a PWA, with sharper SEO and social cards. Bootstrap Icons gained an outline/fill variant switch.",
+    tag: "improved",
+  },
+  {
     date: "2026-06-19",
     title: "Figma plugin",
     summary:

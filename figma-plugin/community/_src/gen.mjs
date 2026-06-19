@@ -6,7 +6,7 @@ import { dirname, join } from "node:path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..", "..");
-const logo = readFileSync(join(ROOT, "Open Icons Logo.png")).toString("base64");
+const logo = readFileSync(join(ROOT, "..", "public", "brand", "logo.png")).toString("base64");
 const LOGO = `data:image/png;base64,${logo}`;
 
 // Real icons from the live CDN — a curated, recognizable wall.

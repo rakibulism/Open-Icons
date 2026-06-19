@@ -55,7 +55,7 @@ async function load(u) {
   const svg = await fetch(`${CDN}/${u}.svg`).then((r) => r.text());
   return loadImage(Buffer.from(svg));
 }
-const logo = await loadImage(join(ROOT, "Open Icons Logo.png"));
+const logo = await loadImage(join(ROOT, "..", "public", "brand", "logo.png"));
 const wallImgs = await Promise.all(WALL.map(load));
 const homeImgs = await Promise.all(HOMES.map(([, u]) => load(u)));
 console.log("loaded", wallImgs.length + homeImgs.length + 1, "images");

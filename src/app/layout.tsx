@@ -44,7 +44,7 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Open Icons" },
   icons: {
     icon: "/icon.png",
-    apple: "/apple-touch-icon.png",
+    apple: "/brand/apple-touch-icon.png",
   },
   openGraph: {
     type: "website",
@@ -52,14 +52,14 @@ export const metadata: Metadata = {
     title: "Open Icons — Every open-source icon, in one place",
     description: OG_DESC,
     url: SITE,
-    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Open Icons — open-source icon library" }],
+    images: [{ url: "/brand/og.png", width: 1200, height: 630, alt: "Open Icons — open-source icon library" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Open Icons — Every open-source icon, in one place",
     description: OG_DESC,
     creator: "@rakibulism",
-    images: ["/og.png"],
+    images: ["/brand/og.png"],
   },
 };
 

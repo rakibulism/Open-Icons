@@ -47,7 +47,7 @@ secrets.local
 *.local
 
 # community video build (regenerable; node_modules is huge)
-/community/_video/node_modules/
-/community/_video/*.wav
-/community/_video/frame_*.png
-/community/_src/*.html
+/figma-plugin/community/_video/node_modules/
+/figma-plugin/community/_video/*.wav
+/figma-plugin/community/_video/frame_*.png
+/figma-plugin/community/_src/*.html

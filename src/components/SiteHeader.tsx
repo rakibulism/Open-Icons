@@ -34,7 +34,7 @@ export default function SiteHeader() {
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight" onClick={() => setMenuOpen(false)}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="Open Icons" width={26} height={26} className="h-[26px] w-[26px] rounded-md" />
+          <img src="/brand/logo.png" alt="Open Icons" width={26} height={26} className="h-[26px] w-[26px] rounded-md" />
           Open Icons
         </Link>
 
