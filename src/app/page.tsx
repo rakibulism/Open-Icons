@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import { getIndex, getSet } from "@/lib/data";
 import { cdnUrl } from "@/lib/sources";
@@ -60,8 +61,15 @@ export default async function Home() {
                     return (
                       <span
                         key={j}
-                        className="-mx-2 grid h-[52px] w-[52px] place-items-center rounded-2xl bg-white text-[#1a2018] shadow-md ring-1 ring-black/[0.06] transition-all duration-300 group-hover:-translate-y-1"
-                        style={{ transform: `rotate(${f.rot}deg) translateY(${f.y}px)`, zIndex: f.z }}
+                        className="-mx-2 grid h-[52px] w-[52px] place-items-center rounded-2xl bg-white text-[#1a2018] shadow-md ring-1 ring-black/[0.06] transition-transform duration-300 ease-out [transform:rotate(var(--r))_translateY(var(--y))] group-hover:[transform:translateX(var(--hx))]"
+                        style={
+                          {
+                            "--r": `${f.rot}deg`,
+                            "--y": `${f.y}px`,
+                            "--hx": `${(j - 2) * 20}px`,
+                            zIndex: f.z,
+                          } as CSSProperties
+                        }
                       >
                         <IconImage src={src} alt="" mono={set.mono} className="h-7 w-7" />
                       </span>

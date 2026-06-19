@@ -60,9 +60,9 @@ export default function Hero({ total, sets }: { total: number; sets: number }) {
         </Link>
       </div>
 
-      {/* Brand status pill — soft orange-tinted label on the orange accent */}
-      <div className="mt-9 inline-flex items-center gap-2 rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-[#ffd9c9]">
-        <span className="h-1.5 w-1.5 rounded-full bg-[#ffd9c9]/80" />
+      {/* Brand status pill — slightly translucent orange with a dark label */}
+      <div className="mt-9 inline-flex items-center gap-2 rounded-full bg-accent/80 px-4 py-1.5 text-sm font-medium text-[#1a2018]">
+        <span className="h-1.5 w-1.5 rounded-full bg-[#1a2018]/50" />
         {total.toLocaleString()} icons · {sets} packs · live from source
       </div>
       </div>
