@@ -76,8 +76,27 @@ body {
 .cell:hover .star { opacity: 1; }
 .star.on { opacity: 1; color: #f5a623; }
 
-.sentinel { height: 1px; }
 .status, .empty { color: var(--figma-color-text-secondary, #888); padding: 6px 12px; margin: 0; }
+
+/* All-libraries overview */
+.overview { padding: 2px 0 12px; }
+.lib { padding: 6px 10px 2px; }
+.lib + .lib { border-top: 1px solid var(--figma-color-border, #ececec); margin-top: 4px; }
+.lib-head { display: flex; align-items: baseline; justify-content: space-between; padding: 4px 0 6px; }
+.lib-meta { display: flex; align-items: baseline; gap: 8px; }
+.lib-meta b { font-size: 12px; font-weight: 600; }
+.lib-meta span { font-size: 11px; color: var(--figma-color-text-secondary, #888); }
+/* Fixed-size cells so exactly two rows show; more columns fill as width grows. */
+.preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 40px);
+  grid-auto-rows: 40px;
+  gap: 4px;
+  max-height: 84px; /* 2 rows × 40px + gap */
+  overflow: hidden;
+  justify-content: space-between;
+}
+.preview .cell { width: 40px; height: 40px; aspect-ratio: auto; }
 .empty { padding: 28px 12px; text-align: center; }
 
 /* Selection panel */

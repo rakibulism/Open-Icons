@@ -5,9 +5,10 @@ import { cdnUrl } from "../../src/lib/sources";
 import { fingerprint, similarity } from "../../src/lib/fingerprint";
 
 const DATA_URL = "https://open-icons.vercel.app";
-const DEFAULT_LIBRARY = "phosphor";
+const DEFAULT_LIBRARY = "all";
 const MAX_RESULTS = 1000;
 const PAGE = 150; // grid render window; grows on scroll
+const PREVIEW = 28; // per-library preview icons on the "All" overview
 const MAX_RECENTS = 24;
 const SHAPE_THRESHOLD = 0.55;
 
@@ -187,17 +188,18 @@ function App() {
     [index],
   );
 
-  // Variants per set, derived from the icon data — so the plugin works even if
-  // the index's `sets[*].variants` field is absent (older deployments).
-  const variantsBySet = useMemo(() => {
-    const m: Record<string, string[]> = {};
+  // Icons grouped by set, and variants per set, in one pass over the index.
+  const { iconsBySet, variantsBySet } = useMemo(() => {
+    const iconsBySet: Record<string, Hit[]> = {};
+    const variantsBySet: Record<string, string[]> = {};
     if (index) {
       for (const it of index.icons) {
-        const arr = m[it.s] ?? (m[it.s] = []);
-        for (const v of Object.keys(it.v)) if (!arr.includes(v)) arr.push(v);
+        (iconsBySet[it.s] ?? (iconsBySet[it.s] = [])).push(it);
+        const vs = variantsBySet[it.s] ?? (variantsBySet[it.s] = []);
+        for (const v of Object.keys(it.v)) if (!vs.includes(v)) vs.push(v);
       }
     }
-    return m;
+    return { iconsBySet, variantsBySet };
   }, [index]);
   const variantsOf = (setId: string) => index?.sets[setId]?.variants ?? variantsBySet[setId] ?? [];
 
@@ -235,12 +237,12 @@ function App() {
     if (view === "recent") return refsToHits(recents);
     if (view === "favorites") return refsToHits(favorites);
     if (library === "all") return [];
-    return index.icons.filter((it) => it.s === library);
+    return iconsBySet[library] ?? [];
 
     function refsToHits(refs: Ref[]) {
       return refs.map((r) => byKey.get(keyOf(r))).filter((h): h is Hit => !!h);
     }
-  }, [index, query, library, view, recents, favorites, byKey]);
+  }, [index, query, library, view, recents, favorites, byKey, iconsBySet]);
 
   // ---- Identified selection ----
   const identified = useMemo(() => {
@@ -459,9 +461,29 @@ function App() {
         </div>
       </div>
 
-      {/* Grid (windowed) */}
+      {/* Body */}
       <div className="scroll" onScroll={onScroll}>
-        {allIcons.length === 0 ? (
+        {library === "all" && !query.trim() && view === "library" ? (
+          // All-libraries overview: each pack as a 2-row preview row.
+          <div className="overview">
+            {setEntries.map(([id, m]) => (
+              <div className="lib" key={id}>
+                <div className="lib-head">
+                  <div className="lib-meta">
+                    <b>{m.name}</b>
+                    <span>{(iconsBySet[id]?.length ?? 0).toLocaleString()} icons</span>
+                  </div>
+                  <button className="chip" onClick={() => setLibrary(id)}>Browse →</button>
+                </div>
+                <div className="preview">
+                  {(iconsBySet[id] ?? []).slice(0, PREVIEW).map((hit) => (
+                    <Cell key={keyOf(hit)} hit={hit} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : allIcons.length === 0 ? (
           <p className="empty">
             {query.trim()
               ? `No icons match “${query}”.`
@@ -469,9 +491,7 @@ function App() {
                 ? "No favorites yet — hover an icon and tap ★."
                 : view === "recent"
                   ? "No recent icons yet."
-                  : library === "all"
-                    ? "Pick a library, or search across all."
-                    : "No icons."}
+                  : "No icons."}
           </p>
         ) : (
           <>
