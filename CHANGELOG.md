@@ -31,7 +31,7 @@ identity, and full launch prep (SEO, PWA, and a Figma Community submission kit).
 
 ### Website
 
-- **New look** inspired by ruul.io — warm cream palette with a lime accent,
+- **New look** inspired by ruul.io — warm cream palette with a bright orange accent,
   **Libertinus Serif** for titles + Geist for body, and a redesigned hero with
   a designers/developers toggle.
 - **Light / Dark / Device** theme switcher (no flash, follows your OS).

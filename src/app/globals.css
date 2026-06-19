@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Palette inspired by ruul.io — warm cream, dark green-black, lime accent. */
+/* Palette inspired by ruul.io — warm cream, dark green-black, orange accent (#ff3d03). */
 :root {
   --background: #fcfcf7;
   --surface: #ffffff;
@@ -8,8 +8,8 @@
   --muted: #6b7280;
   --border: #e8e7de;
   --border-strong: #d6d4c7;
-  --accent: #d3f969;
-  --accent-foreground: #1a2018;
+  --accent: #ff3d03;
+  --accent-foreground: #ffffff;
 }
 
 /* Dark palette — applied explicitly via [data-theme="dark"], and as the
@@ -21,8 +21,8 @@ html[data-theme="dark"] {
   --muted: #9a9e92;
   --border: #2a3025;
   --border-strong: #3a4034;
-  --accent: #d3f969;
-  --accent-foreground: #1a2018;
+  --accent: #ff3d03;
+  --accent-foreground: #ffffff;
 }
 @media (prefers-color-scheme: dark) {
   html:not([data-theme]) {
@@ -32,8 +32,8 @@ html[data-theme="dark"] {
     --muted: #9a9e92;
     --border: #2a3025;
     --border-strong: #3a4034;
-    --accent: #d3f969;
-    --accent-foreground: #1a2018;
+    --accent: #ff3d03;
+    --accent-foreground: #ffffff;
   }
 }
 

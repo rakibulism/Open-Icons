@@ -26,7 +26,7 @@ export const UPDATES: Update[] = [
     date: "2026-06-20",
     title: "A fresh look",
     summary:
-      "A warm new palette with a lime accent, Libertinus Serif titles, a redesigned hero, and a Light / Dark / Device theme switcher across the site.",
+      "A warm new palette with a bright orange accent, Libertinus Serif titles, a redesigned hero, and a Light / Dark / Device theme switcher across the site.",
     tag: "improved",
   },
   {
