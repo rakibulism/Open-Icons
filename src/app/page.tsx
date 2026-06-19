@@ -58,7 +58,7 @@ export default async function Home() {
               <Link
                 key={set.id}
                 href={`/${set.id}`}
-                className="group flex flex-col overflow-hidden rounded-2xl border bg-surface transition-all duration-300 hover:-translate-y-1"
+                className="group flex flex-col overflow-hidden rounded-2xl border bg-surface"
               >
                 {/* Visual top panel — fanned sample icons on white tiles */}
                 <div className="relative flex h-32 items-end justify-center overflow-hidden bg-gradient-to-br from-accent/[0.18] via-accent/[0.04] to-accent/[0.14] pb-6">
