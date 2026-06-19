@@ -1,14 +1,22 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import PrimaryButton from "./PrimaryButton";
 
 type Audience = "designers" | "developers";
 
 export default function Hero({ total, sets }: { total: number; sets: number }) {
   const [aud, setAud] = useState<Audience>("designers");
+  const [query, setQuery] = useState("");
+  const router = useRouter();
   const isDesigner = aud === "designers";
+
+  function onSearch(e: FormEvent) {
+    e.preventDefault();
+    const q = query.trim();
+    router.push(q ? `/search?q=${encodeURIComponent(q)}` : "/search");
+  }
 
   return (
     <section className="relative isolate overflow-hidden">
@@ -40,20 +48,34 @@ export default function Hero({ total, sets }: { total: number; sets: number }) {
           : `Every icon on a live CDN — copy, download, or hotlink the SVG. No installs, no storage, always in sync with each pack.`}
       </p>
 
-      {/* CTAs */}
-      <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-        {!isDesigner && (
-          <PrimaryButton href="/docs">
-            Read the docs <Arrow />
-          </PrimaryButton>
-        )}
-        <Link
-          href="/search"
-          className="inline-flex items-center gap-2 rounded-xl border bg-surface px-5 py-3 text-sm font-medium transition-colors hover:border-border-strong"
-        >
-          <SearchIcon /> Search all icons
-        </Link>
-      </div>
+      {/* Full-width search — spans the hero text width */}
+      <form onSubmit={onSearch} className="mt-9 w-full">
+        <div className="relative">
+          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted">
+            <SearchIcon />
+          </span>
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={`Search ${total.toLocaleString()} icons across all packs…`}
+            aria-label="Search all icons"
+            className="w-full rounded-2xl border bg-surface py-4 pl-12 pr-28 text-base shadow-sm outline-none transition-colors placeholder:text-muted focus:border-border-strong"
+          />
+          <button
+            type="submit"
+            className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-accent-foreground transition-opacity hover:opacity-90"
+          >
+            Search
+          </button>
+        </div>
+      </form>
+
+      {!isDesigner && (
+        <PrimaryButton href="/docs" className="mt-4">
+          Read the docs <Arrow />
+        </PrimaryButton>
+      )}
       </div>
     </section>
   );
