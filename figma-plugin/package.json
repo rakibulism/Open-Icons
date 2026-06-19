@@ -1,0 +1,19 @@
+{
+  "name": "open-icons-figma-plugin",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Search and insert open-source icons into Figma — powered by Open Icons.",
+  "scripts": {
+    "build": "node build.mjs",
+    "watch": "node build.mjs --watch"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.100.0",
+    "esbuild": "^0.24.2",
+    "typescript": "^5.6.0"
+  }
+}
