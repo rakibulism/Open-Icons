@@ -12,7 +12,15 @@ export default function Hero({ total, sets }: { total: number; sets: number }) {
   const isDesigner = aud === "designers";
 
   return (
-    <section className="mx-auto flex max-w-3xl flex-col items-center px-5 py-16 text-center sm:py-24">
+    <section className="relative isolate overflow-hidden">
+      {/* Sunset sky background — fades out toward the bottom, sits low so the
+          content stays legible. Scales with the section (bg-cover) at any width. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 -z-10 bg-[url('/brand/hero-bg.jpg')] bg-cover bg-center opacity-35 [mask-image:linear-gradient(to_bottom,black_0%,black_35%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,black_0%,black_35%,transparent_100%)]"
+      />
+
+      <div className="mx-auto flex max-w-3xl flex-col items-center px-5 py-16 text-center sm:py-24">
       {/* Audience toggle */}
       <div className="inline-flex rounded-full border bg-foreground/[0.035] p-1">
         <Toggle active={isDesigner} onClick={() => setAud("designers")}>For designers</Toggle>
@@ -56,6 +64,7 @@ export default function Hero({ total, sets }: { total: number; sets: number }) {
       <div className="mt-9 inline-flex items-center gap-2 rounded-full bg-accent px-4 py-1.5 text-sm font-medium text-[#ffd9c9]">
         <span className="h-1.5 w-1.5 rounded-full bg-[#ffd9c9]/80" />
         {total.toLocaleString()} icons · {sets} packs · live from source
+      </div>
       </div>
     </section>
   );

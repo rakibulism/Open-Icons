@@ -36,11 +36,11 @@ export default async function Home() {
   const manifests = await Promise.all(sets.map((s) => getSet(s.id)));
 
   return (
-    <div className="mx-auto max-w-6xl px-5">
+    <>
       <Hero total={total} sets={sets.length} />
 
       {/* Set grid */}
-      <section className="pb-24">
+      <section className="mx-auto max-w-6xl px-5 pb-24">
         <h2 className="mb-5 font-sans text-sm font-medium uppercase tracking-wider text-muted">
           Icon packs
         </h2>
@@ -96,6 +96,6 @@ export default async function Home() {
           })}
         </div>
       </section>
-    </div>
+    </>
   );
 }
