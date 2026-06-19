@@ -34,8 +34,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 
-# generated icon manifests (auto-synced at build time, never committed)
+# generated icon manifests + search index (auto-synced at build time, never committed)
 /src/data/
+/public/data/
 /.icon-cache/
 
 # secrets

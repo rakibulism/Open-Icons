@@ -18,6 +18,7 @@ import { SOURCES, treeUrl, versionsUrl } from "../src/lib/sources";
 import type { ManifestIcon, SetManifest, SetSummary } from "../src/lib/types";
 
 const DATA_DIR = join(process.cwd(), "src", "data");
+const PUBLIC_DATA_DIR = join(process.cwd(), "public", "data");
 
 type JsdFile = { name: string };
 
@@ -38,7 +39,10 @@ async function resolveVersion(source: (typeof SOURCES)[number]): Promise<string>
   return latest;
 }
 
-async function syncOne(source: (typeof SOURCES)[number], syncedAt: string): Promise<SetSummary> {
+async function syncOne(
+  source: (typeof SOURCES)[number],
+  syncedAt: string,
+): Promise<{ summary: SetSummary; manifest: SetManifest }> {
   const version = await resolveVersion(source);
   const tree = await getJson<{ files?: JsdFile[] }>(treeUrl(source, version));
   const files = tree.files ?? [];
@@ -79,7 +83,7 @@ async function syncOne(source: (typeof SOURCES)[number], syncedAt: string): Prom
 
   await writeFile(join(DATA_DIR, `${source.id}.json`), JSON.stringify(manifest));
 
-  return {
+  const summary: SetSummary = {
     id: source.id,
     name: source.name,
     version,
@@ -92,18 +96,22 @@ async function syncOne(source: (typeof SOURCES)[number], syncedAt: string): Prom
     repoUrl: source.repoUrl,
     syncedAt,
   };
+  return { summary, manifest };
 }
 
 async function main() {
   await mkdir(DATA_DIR, { recursive: true });
+  await mkdir(PUBLIC_DATA_DIR, { recursive: true });
   const syncedAt = new Date().toISOString();
   const summaries: SetSummary[] = [];
+  const manifests: SetManifest[] = [];
 
   for (const source of SOURCES) {
     process.stdout.write(`• ${source.name.padEnd(18)} `);
     try {
-      const summary = await syncOne(source, syncedAt);
+      const { summary, manifest } = await syncOne(source, syncedAt);
       summaries.push(summary);
+      manifests.push(manifest);
       console.log(`${String(summary.count).padStart(6)} icons  (${summary.version})`);
     } catch (err) {
       console.log(`FAILED — ${(err as Error).message}`);
@@ -117,7 +125,26 @@ async function main() {
     JSON.stringify({ syncedAt, total, sets: summaries }, null, 2),
   );
 
-  console.log(`\n✓ ${summaries.length} sets, ${total.toLocaleString()} icons total → src/data/`);
+  // Combined global search index — served statically at /data/search.json
+  // (same-origin for the website, absolute URL for the Figma plugin). Holds
+  // every icon's name + variant paths plus minimal per-set CDN metadata.
+  const searchIndex = {
+    syncedAt,
+    total,
+    sets: Object.fromEntries(
+      manifests.map((m) => [
+        m.id,
+        { name: m.name, version: m.version, type: m.type, pkg: m.pkg, mono: m.mono, defaultVariant: m.defaultVariant },
+      ]),
+    ),
+    icons: manifests.flatMap((m) => m.icons.map((i) => ({ n: i.n, s: m.id, v: i.v }))),
+  };
+  await writeFile(join(PUBLIC_DATA_DIR, "search.json"), JSON.stringify(searchIndex));
+
+  console.log(
+    `\n✓ ${summaries.length} sets, ${total.toLocaleString()} icons total → src/data/` +
+      `\n✓ global search index (${searchIndex.icons.length.toLocaleString()} icons) → public/data/search.json`,
+  );
 }
 
 main().catch((err) => {

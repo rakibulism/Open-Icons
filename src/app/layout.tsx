@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import { SITE_URL } from "@/lib/site";
+import SearchHotkey from "@/components/SearchHotkey";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -67,6 +68,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             </Link>
             <nav className="flex items-center gap-5 text-sm text-muted">
               <Link href="/" className="hover:text-foreground transition-colors">Browse</Link>
+              <Link href="/search" className="hover:text-foreground transition-colors">Search</Link>
               <a
                 href="https://github.com/rakibulism/Open-Icons"
                 target="_blank"
@@ -79,6 +81,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           </div>
         </header>
 
+        <SearchHotkey />
         <main className="flex-1">{children}</main>
 
         <footer className="border-t">

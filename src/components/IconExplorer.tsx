@@ -4,6 +4,7 @@ import { useMemo, useState, useCallback, useEffect } from "react";
 import { cdnUrl } from "@/lib/sources";
 import type { ManifestIcon, SetManifest } from "@/lib/types";
 import IconImage from "./IconImage";
+import IconDetail from "./IconDetail";
 
 const PAGE = 120;
 
@@ -108,142 +109,18 @@ export default function IconExplorer({ manifest }: Props) {
 
       {selected && (
         <IconDetail
-          manifest={manifest}
+          setMeta={{
+            name: manifest.name,
+            version: manifest.version,
+            type: manifest.type,
+            pkg: manifest.pkg,
+            mono: manifest.mono,
+          }}
           icon={selected}
-          variant={variant}
+          initialVariant={variant}
           onClose={() => setSelected(null)}
         />
       )}
     </div>
-  );
-}
-
-function IconDetail({
-  manifest,
-  icon,
-  variant,
-  onClose,
-}: {
-  manifest: SetManifest;
-  icon: ManifestIcon;
-  variant: string;
-  onClose: () => void;
-}) {
-  const { type, pkg, version } = manifest;
-  const [activeVariant, setActiveVariant] = useState(
-    icon.v[variant] ? variant : Object.keys(icon.v)[0],
-  );
-  const [copied, setCopied] = useState<string | null>(null);
-
-  const path = icon.v[activeVariant] ?? Object.values(icon.v)[0];
-  const url = cdnUrl({ type, pkg }, version, path);
-
-  const flash = (label: string) => {
-    setCopied(label);
-    setTimeout(() => setCopied(null), 1400);
-  };
-
-  const copySvg = async () => {
-    const svg = await fetch(url).then((r) => r.text());
-    await navigator.clipboard.writeText(svg);
-    flash("svg");
-  };
-  const copyName = async () => {
-    await navigator.clipboard.writeText(icon.n);
-    flash("name");
-  };
-  const copyUrl = async () => {
-    await navigator.clipboard.writeText(url);
-    flash("url");
-  };
-  const download = async () => {
-    const svg = await fetch(url).then((r) => r.text());
-    const blob = new Blob([svg], { type: "image/svg+xml" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `${icon.n}${activeVariant !== "default" ? `-${activeVariant}` : ""}.svg`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  };
-
-  // Close on Escape.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-5"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-md rounded-t-2xl border bg-surface p-6 sm:rounded-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between">
-          <div>
-            <h2 className="font-mono text-lg font-medium">{icon.n}</h2>
-            <p className="text-xs text-muted">
-              {manifest.name} · {manifest.version}
-            </p>
-          </div>
-          <button onClick={onClose} className="text-muted hover:text-foreground" aria-label="Close">
-            ✕
-          </button>
-        </div>
-
-        <div className="my-6 grid place-items-center rounded-xl border bg-background py-10 text-foreground">
-          <IconImage src={url} alt={icon.n} mono={manifest.mono} className="h-16 w-16" />
-        </div>
-
-        {Object.keys(icon.v).length > 1 && (
-          <div className="mb-4 flex flex-wrap gap-1.5">
-            {Object.keys(icon.v).map((v) => (
-              <button
-                key={v}
-                onClick={() => setActiveVariant(v)}
-                className={`rounded-md border px-2.5 py-1 text-xs transition-colors ${
-                  v === activeVariant
-                    ? "border-border-strong bg-accent text-accent-foreground"
-                    : "text-muted hover:text-foreground"
-                }`}
-              >
-                {v}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div className="grid grid-cols-2 gap-2">
-          <ActionButton onClick={copySvg} active={copied === "svg"} label="Copy SVG" done="Copied!" />
-          <ActionButton onClick={download} label="Download" />
-          <ActionButton onClick={copyName} active={copied === "name"} label="Copy name" done="Copied!" />
-          <ActionButton onClick={copyUrl} active={copied === "url"} label="Copy CDN URL" done="Copied!" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ActionButton({
-  onClick,
-  label,
-  done,
-  active,
-}: {
-  onClick: () => void;
-  label: string;
-  done?: string;
-  active?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="rounded-lg border bg-background px-3 py-2.5 text-sm font-medium transition-colors hover:border-border-strong"
-    >
-      {active && done ? done : label}
-    </button>
   );
 }

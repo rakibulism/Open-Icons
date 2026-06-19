@@ -8,6 +8,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [
     { url: SITE_URL, lastModified, changeFrequency: "daily", priority: 1 },
+    { url: `${SITE_URL}/search`, lastModified, changeFrequency: "daily", priority: 0.9 },
     ...sets.map((set) => ({
       url: `${SITE_URL}/${set.id}`,
       lastModified,
