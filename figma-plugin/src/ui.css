@@ -1,56 +1,93 @@
 * { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; }
+html, body { margin: 0; padding: 0; height: 100%; }
 body {
   font-family: Inter, -apple-system, system-ui, sans-serif;
   font-size: 12px;
   background: var(--figma-color-bg, #fff);
   color: var(--figma-color-text, #111);
 }
-.app { display: flex; flex-direction: column; height: 100vh; }
+#root { height: 100%; }
+.app { display: flex; flex-direction: column; height: 100vh; position: relative; }
 
-.topbar { display: flex; gap: 6px; padding: 10px; }
+/* Header */
+.topbar { display: flex; gap: 6px; padding: 8px 10px 6px; }
 .search {
   flex: 1; min-width: 0;
   border: 1px solid var(--figma-color-border, #e6e6e6);
   background: var(--figma-color-bg-secondary, #f5f5f5);
-  color: inherit;
-  border-radius: 6px; padding: 7px 9px; font-size: 12px; outline: none;
+  color: inherit; border-radius: 6px; padding: 7px 9px; font-size: 12px; outline: none;
 }
 .search:focus { border-color: var(--figma-color-border-selected, #0d99ff); }
-
-.iconbtn, .primary {
+.iconbtn {
+  width: 32px; flex: 0 0 auto;
   border: 1px solid var(--figma-color-border, #e6e6e6);
   background: var(--figma-color-bg, #fff); color: inherit;
-  border-radius: 6px; padding: 0 10px; cursor: pointer; font-size: 13px;
+  border-radius: 6px; cursor: pointer; font-size: 13px;
 }
-.primary { background: var(--figma-color-bg-brand, #0d99ff); color: #fff; border: none; padding: 7px 12px; }
-.iconbtn { width: 32px; }
 
-.settings { padding: 0 10px 10px; }
-.settings label { display: block; font-weight: 600; margin-bottom: 4px; }
-.settings .row { display: flex; gap: 6px; }
-.hint { color: var(--figma-color-text-secondary, #888); margin: 6px 0 0; }
-
-.chips { display: flex; gap: 4px; overflow-x: auto; padding: 0 10px 8px; }
-.chip {
-  flex: 0 0 auto; white-space: nowrap;
+/* Controls row */
+.controls { display: flex; gap: 6px; align-items: center; padding: 0 10px 8px; flex-wrap: wrap; }
+.seg {
+  display: inline-flex; border: 1px solid var(--figma-color-border, #e6e6e6);
+  border-radius: 6px; overflow: hidden;
+}
+.seg button {
+  border: none; background: var(--figma-color-bg, #fff); color: var(--figma-color-text-secondary, #888);
+  padding: 5px 10px; cursor: pointer; font-size: 11px; line-height: 1;
+}
+.seg button.on { background: var(--figma-color-bg-brand, #0d99ff); color: #fff; }
+.seg.view button { padding: 5px 8px; font-size: 13px; }
+.select {
   border: 1px solid var(--figma-color-border, #e6e6e6);
-  background: transparent; color: var(--figma-color-text-secondary, #888);
-  border-radius: 6px; padding: 4px 8px; cursor: pointer; font-size: 11px;
+  background: var(--figma-color-bg, #fff); color: inherit;
+  border-radius: 6px; padding: 5px 6px; font-size: 11px; max-width: 130px;
 }
-.chip.active { background: var(--figma-color-bg-brand, #0d99ff); color: #fff; border-color: transparent; }
 
-.status, .empty { color: var(--figma-color-text-secondary, #888); padding: 4px 12px; margin: 0; }
-.empty { padding: 24px 12px; text-align: center; }
+/* Settings */
+.settings { padding: 0 12px 8px; display: flex; flex-direction: column; gap: 8px; }
+.toggle { display: flex; align-items: center; gap: 7px; font-size: 12px; cursor: pointer; }
+.toggle code {
+  background: var(--figma-color-bg-secondary, #f0f0f0); padding: 1px 4px; border-radius: 3px; font-size: 11px;
+}
 
+/* Grid */
+.scroll { flex: 1; overflow-y: auto; }
+.grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+  gap: 4px; padding: 4px 10px 12px; align-content: start;
+}
+.cell {
+  position: relative; aspect-ratio: 1 / 1;
+  display: grid; place-items: center;
+  border: 1px solid var(--figma-color-border, #e6e6e6);
+  background: var(--figma-color-bg, #fff); color: inherit;
+  border-radius: 6px; cursor: pointer; padding: 6px;
+}
+.cell:hover { border-color: var(--figma-color-border-selected, #0d99ff); }
+.thumb { width: 20px; height: 20px; display: inline-block; }
+.badge {
+  position: absolute; bottom: 1px; right: 2px; font-size: 8px; line-height: 1;
+  color: var(--figma-color-text-secondary, #888);
+}
+.star {
+  position: absolute; top: 1px; right: 2px; font-size: 11px; line-height: 1;
+  color: var(--figma-color-text-secondary, #aaa); opacity: 0; cursor: pointer;
+}
+.cell:hover .star { opacity: 1; }
+.star.on { opacity: 1; color: #f5a623; }
+
+.sentinel { height: 1px; }
+.status, .empty { color: var(--figma-color-text-secondary, #888); padding: 6px 12px; margin: 0; }
+.empty { padding: 28px 12px; text-align: center; }
+
+/* Selection panel */
 .panel {
   border-bottom: 1px solid var(--figma-color-border, #e6e6e6);
-  background: var(--figma-color-bg-secondary, #f7f7f7);
-  padding: 10px 12px;
+  background: var(--figma-color-bg-secondary, #f7f7f7); padding: 10px 12px;
 }
 .panel-head {
-  font-weight: 600; font-size: 11px; text-transform: uppercase;
-  letter-spacing: 0.04em; color: var(--figma-color-text-secondary, #888);
+  font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--figma-color-text-secondary, #888);
 }
 .panel-sub { font-size: 11px; color: var(--figma-color-text-secondary, #888); margin: 8px 0 6px; }
 .ident { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
@@ -63,61 +100,22 @@ body {
 .ident-name { font-weight: 600; font-size: 13px; }
 .ident-sub { font-size: 11px; color: var(--figma-color-text-secondary, #888); }
 .grid.small {
-  display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; padding: 0;
-  max-height: 96px; overflow-y: auto;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(34px, 1fr));
+  gap: 4px; padding: 0; max-height: 104px; overflow-y: auto;
 }
 
-.grid {
-  flex: 1; overflow-y: auto;
-  display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px;
-  padding: 4px 10px 12px; align-content: start;
+/* Batch-swap chips */
+.chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.chip {
+  border: 1px solid var(--figma-color-border, #e6e6e6); background: var(--figma-color-bg, #fff);
+  color: inherit; border-radius: 6px; padding: 4px 8px; cursor: pointer; font-size: 11px;
 }
-.cell {
-  aspect-ratio: 1 / 1;
-  display: grid; place-items: center;
-  border: 1px solid var(--figma-color-border, #e6e6e6);
-  background: var(--figma-color-bg, #fff); color: inherit;
-  border-radius: 6px; cursor: pointer; padding: 6px;
-}
-.cell:hover { border-color: var(--figma-color-border-selected, #0d99ff); }
-.cell { position: relative; }
-.thumb { width: 20px; height: 20px; display: inline-block; }
-.badge {
-  position: absolute; bottom: 1px; right: 2px; font-size: 8px; line-height: 1;
-  color: var(--figma-color-text-secondary, #888);
-}
+.chip:hover { border-color: var(--figma-color-border-selected, #0d99ff); }
+.chip .count { color: var(--figma-color-text-secondary, #888); margin-left: 3px; }
 
-.scroll { flex: 1; overflow-y: auto; }
-.scroll .grid { flex: none; }
-.section {
-  font-size: 11px; font-weight: 600; text-transform: uppercase;
-  letter-spacing: 0.04em; color: var(--figma-color-text-secondary, #888);
-  padding: 10px 12px 2px;
-}
-.chips.wrap { flex-wrap: wrap; overflow: visible; }
-
-/* Variant / insert popover */
-.sheet-bg {
-  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.3);
-  display: flex; align-items: flex-end;
-}
-.sheet {
-  width: 100%;
-  background: var(--figma-color-bg, #fff);
-  border-top: 1px solid var(--figma-color-border, #e6e6e6);
-  border-radius: 10px 10px 0 0;
-  padding: 12px; box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.12);
-}
-.sheet-head { display: flex; align-items: center; justify-content: space-between; }
-.heart {
-  border: none; background: none; cursor: pointer; font-size: 18px;
-  color: var(--figma-color-text-secondary, #888); padding: 4px;
-}
-.heart.on { color: #f5a623; }
-.sheet-actions { display: flex; gap: 8px; margin-top: 12px; }
-.sheet-actions .primary, .sheet-actions .secondary { flex: 1; padding: 9px 12px; font-size: 12px; }
-.secondary {
-  border: 1px solid var(--figma-color-border, #e6e6e6);
-  background: var(--figma-color-bg, #fff); color: inherit;
-  border-radius: 6px; cursor: pointer;
+/* Resize handle */
+.resize {
+  position: absolute; right: 0; bottom: 0; width: 14px; height: 14px;
+  cursor: nwse-resize;
+  background: linear-gradient(135deg, transparent 50%, var(--figma-color-border-strong, #ccc) 50%, var(--figma-color-border-strong, #ccc) 60%, transparent 60%, transparent 72%, var(--figma-color-border-strong, #ccc) 72%, var(--figma-color-border-strong, #ccc) 82%, transparent 82%);
 }

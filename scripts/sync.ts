@@ -134,7 +134,15 @@ async function main() {
     sets: Object.fromEntries(
       manifests.map((m) => [
         m.id,
-        { name: m.name, version: m.version, type: m.type, pkg: m.pkg, mono: m.mono, defaultVariant: m.defaultVariant },
+        {
+          name: m.name,
+          version: m.version,
+          type: m.type,
+          pkg: m.pkg,
+          mono: m.mono,
+          defaultVariant: m.defaultVariant,
+          variants: m.variants,
+        },
       ]),
     ),
     icons: manifests.flatMap((m) => m.icons.map((i) => ({ n: i.n, s: m.id, v: i.v }))),

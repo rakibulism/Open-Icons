@@ -2,35 +2,40 @@
  * Open Icons — Figma plugin controller (sandbox).
  *
  * The sandbox has no network access, so the UI iframe does all fetching and
- * hands us finished SVG markup to insert. We also:
- *  - stamp every inserted icon with pluginData (set/name/variant) so a later
- *    selection can be identified exactly ("which pack is this icon?");
- *  - watch selection changes and report back what's selected (the stamped
- *    identity if present, otherwise the layer name + an SVG preview for a
- *    name-based guess);
- *  - swap the selected icon for another pack's version in place.
+ * hands us finished SVG markup. The controller:
+ *  - inserts/replaces SVGs as editable vectors;
+ *  - stamps each with pluginData (set/name/variant) AND names the layer
+ *    "set/icon" (e.g. "phosphor/house") when naming is enabled, so a later
+ *    selection can be identified exactly;
+ *  - reports the current selection (one or many nodes) with each node's
+ *    identity (pluginData → "set/icon" name → none), plus an exported SVG for
+ *    shape-matching a single unidentified node;
+ *  - swaps one or many selected icons in place (batch);
+ *  - persists settings + favorites/recents in clientStorage.
  */
 
-const STORAGE_KEY = "open-icons:data-url";
+const SETTINGS_KEY = "open-icons:settings"; // { naming, shapeDetect }
 const LISTS_KEY = "open-icons:lists"; // { favorites, recents }
 const DATA_KEY = "openIcons"; // pluginData namespace on inserted nodes
 
-figma.showUI(__html__, { width: 380, height: 600, themeColors: true });
-
 type IconMeta = { set: string; name: string; variant: string };
-
+type Settings = { naming: boolean; shapeDetect: boolean };
 type Lists = { favorites: unknown[]; recents: unknown[] };
 
-type UiMessage =
-  | { type: "get-config" }
-  | { type: "set-config"; dataUrl: string }
-  | { type: "get-selection" }
-  | { type: "get-lists" }
-  | { type: "set-lists"; lists: Lists }
-  | { type: "insert-svg"; svg: string; meta: IconMeta }
-  | { type: "replace-svg"; svg: string; meta: IconMeta }
-  | { type: "resize"; height: number }
-  | { type: "close" };
+let settings: Settings = { naming: true, shapeDetect: true };
+
+const NAME_RE = /^([a-z0-9][a-z0-9-]*)\/(.+)$/i;
+
+figma.showUI(__html__, { width: 400, height: 620, themeColors: true });
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function applyMeta(node: BaseNode & { name: string }, meta: IconMeta) {
+  node.name = settings.naming ? `${meta.set}/${meta.name}` : meta.name;
+  node.setPluginData(DATA_KEY, JSON.stringify(meta));
+}
 
 function placeAtCenter(node: SceneNode) {
   if ("width" in node) {
@@ -39,56 +44,92 @@ function placeAtCenter(node: SceneNode) {
   }
 }
 
-function stamp(node: BaseNode, meta: IconMeta) {
-  node.setPluginData(DATA_KEY, JSON.stringify(meta));
+/** Identify a node: pluginData first, then "set/icon" layer name. */
+function identify(node: BaseNode): IconMeta | { set: string; name: string } | null {
+  const raw = node.getPluginData(DATA_KEY);
+  if (raw) {
+    try {
+      return JSON.parse(raw) as IconMeta;
+    } catch {
+      /* fall through */
+    }
+  }
+  if (settings.naming) {
+    const m = node.name.match(NAME_RE);
+    if (m) return { set: m[1].toLowerCase(), name: m[2] };
+  }
+  return null;
+}
+
+/** Replace one node in place with new SVG, preserving footprint + slot. */
+function replaceNode(old: SceneNode, svg: string, meta: IconMeta): SceneNode {
+  const node = figma.createNodeFromSvg(svg);
+  applyMeta(node, meta);
+  node.x = old.x;
+  node.y = old.y;
+  if ("width" in old && "resize" in node) node.resize(old.width, old.height);
+  const parent = old.parent;
+  if (parent) {
+    const index = parent.children.indexOf(old);
+    parent.insertChild(index, node);
+  }
+  old.remove();
+  return node;
 }
 
 async function sendSelection() {
   const sel = figma.currentPage.selection;
-  if (sel.length !== 1) {
-    figma.ui.postMessage({ type: "selection", node: null });
+  if (sel.length === 0) {
+    figma.ui.postMessage({ type: "selection", nodes: [] });
     return;
   }
-  const node = sel[0];
 
-  let detected: IconMeta | null = null;
-  const raw = node.getPluginData(DATA_KEY);
-  if (raw) {
-    try {
-      detected = JSON.parse(raw) as IconMeta;
-    } catch {
-      detected = null;
-    }
-  }
+  const nodes = sel.slice(0, 100).map((n) => ({
+    id: n.id,
+    name: n.name,
+    detected: identify(n),
+  }));
 
-  // For un-stamped nodes, export an SVG preview so the UI can show what's
-  // selected and offer name-based guesses.
+  // Export an SVG only for a single, unidentified node (for shape matching).
   let svg: Uint8Array | null = null;
-  if (!detected && "exportAsync" in node) {
+  if (sel.length === 1 && !nodes[0].detected && "exportAsync" in sel[0]) {
     try {
-      svg = await (node as SceneNode & ExportMixin).exportAsync({ format: "SVG" });
+      svg = await (sel[0] as SceneNode & ExportMixin).exportAsync({ format: "SVG" });
     } catch {
       svg = null;
     }
   }
 
-  figma.ui.postMessage({
-    type: "selection",
-    node: { name: node.name, nodeType: node.type, detected },
-    svg,
-  });
+  figma.ui.postMessage({ type: "selection", nodes, svg });
 }
+
+// ---------------------------------------------------------------------------
+// Message handling
+// ---------------------------------------------------------------------------
+
+type UiMessage =
+  | { type: "get-settings" }
+  | { type: "set-settings"; settings: Settings }
+  | { type: "get-selection" }
+  | { type: "get-lists" }
+  | { type: "set-lists"; lists: Lists }
+  | { type: "insert-svg"; svg: string; meta: IconMeta }
+  | { type: "replace-batch"; items: { id: string; svg: string; meta: IconMeta }[] }
+  | { type: "resize"; width: number; height: number }
+  | { type: "close" };
 
 figma.ui.onmessage = async (msg: UiMessage) => {
   switch (msg.type) {
-    case "get-config": {
-      const dataUrl = (await figma.clientStorage.getAsync(STORAGE_KEY)) ?? null;
-      figma.ui.postMessage({ type: "config", dataUrl });
+    case "get-settings": {
+      const stored = (await figma.clientStorage.getAsync(SETTINGS_KEY)) as Settings | undefined;
+      if (stored) settings = { ...settings, ...stored };
+      figma.ui.postMessage({ type: "settings", settings });
       break;
     }
 
-    case "set-config":
-      await figma.clientStorage.setAsync(STORAGE_KEY, msg.dataUrl);
+    case "set-settings":
+      settings = { ...settings, ...msg.settings };
+      await figma.clientStorage.setAsync(SETTINGS_KEY, settings);
       break;
 
     case "get-selection":
@@ -96,10 +137,7 @@ figma.ui.onmessage = async (msg: UiMessage) => {
       break;
 
     case "get-lists": {
-      const lists = (await figma.clientStorage.getAsync(LISTS_KEY)) ?? {
-        favorites: [],
-        recents: [],
-      };
+      const lists = (await figma.clientStorage.getAsync(LISTS_KEY)) ?? { favorites: [], recents: [] };
       figma.ui.postMessage({ type: "lists", lists });
       break;
     }
@@ -111,8 +149,7 @@ figma.ui.onmessage = async (msg: UiMessage) => {
     case "insert-svg": {
       try {
         const node = figma.createNodeFromSvg(msg.svg);
-        node.name = msg.meta.name;
-        stamp(node, msg.meta);
+        applyMeta(node, msg.meta);
         placeAtCenter(node);
         figma.currentPage.selection = [node];
         figma.viewport.scrollAndZoomIntoView([node]);
@@ -123,38 +160,32 @@ figma.ui.onmessage = async (msg: UiMessage) => {
       break;
     }
 
-    case "replace-svg": {
+    case "replace-batch": {
       try {
-        const sel = figma.currentPage.selection;
-        const old = sel.length === 1 ? sel[0] : null;
-        const node = figma.createNodeFromSvg(msg.svg);
-        node.name = msg.meta.name;
-        stamp(node, msg.meta);
-
-        if (old && old.parent) {
-          // Match the old node's footprint and slot, then remove it.
-          node.x = old.x;
-          node.y = old.y;
-          if ("width" in old && "resize" in node) {
-            node.resize(old.width, old.height);
-          }
-          const index = old.parent.children.indexOf(old);
-          old.parent.insertChild(index, node);
-          old.remove();
-        } else {
-          placeAtCenter(node);
+        const items = new Map(msg.items.map((it) => [it.id, it]));
+        const snapshot = figma.currentPage.selection.slice();
+        const fresh: SceneNode[] = [];
+        for (const old of snapshot) {
+          const it = items.get(old.id);
+          if (!it) continue;
+          fresh.push(replaceNode(old, it.svg, it.meta));
         }
-        figma.currentPage.selection = [node];
-        figma.notify(`Swapped to “${msg.meta.name}”`);
+        if (fresh.length) {
+          figma.currentPage.selection = fresh;
+          figma.notify(fresh.length === 1 ? `Swapped to “${msg.items[0].meta.name}”` : `Swapped ${fresh.length} icons`);
+        }
       } catch (e) {
-        figma.notify(`Couldn't swap icon: ${(e as Error).message}`, { error: true });
+        figma.notify(`Couldn't swap: ${(e as Error).message}`, { error: true });
       }
       break;
     }
 
-    case "resize":
-      figma.ui.resize(380, Math.max(360, Math.round(msg.height)));
+    case "resize": {
+      const w = Math.min(900, Math.max(300, Math.round(msg.width)));
+      const h = Math.min(900, Math.max(360, Math.round(msg.height)));
+      figma.ui.resize(w, h);
       break;
+    }
 
     case "close":
       figma.closePlugin();
@@ -165,4 +196,3 @@ figma.ui.onmessage = async (msg: UiMessage) => {
 figma.on("selectionchange", () => {
   void sendSelection();
 });
-void sendSelection();

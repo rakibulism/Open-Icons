@@ -4,8 +4,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { cdnUrl } from "../../src/lib/sources";
 import { fingerprint, similarity } from "../../src/lib/fingerprint";
 
-const DEFAULT_DATA_URL = "https://open-icons.vercel.app";
-const MAX_RESULTS = 150;
+const DATA_URL = "https://open-icons.vercel.app";
+const DEFAULT_LIBRARY = "phosphor";
+const MAX_RESULTS = 1000;
+const PAGE = 150; // grid render window; grows on scroll
 const MAX_RECENTS = 24;
 const SHAPE_THRESHOLD = 0.55;
 
@@ -16,12 +18,15 @@ type SetMeta = {
   pkg: string;
   mono: boolean;
   defaultVariant: string;
+  variants: string[];
 };
 type Hit = { n: string; s: string; v: Record<string, string> };
 type Index = { total: number; sets: Record<string, SetMeta>; icons: Hit[] };
 type IconMeta = { set: string; name: string; variant: string };
-type Selection = { name: string; nodeType: string; detected: IconMeta | null } | null;
+type Detected = { set: string; name: string; variant?: string } | null;
+type SelNode = { id: string; name: string; detected: Detected };
 type Ref = { s: string; n: string };
+type Settings = { naming: boolean; shapeDetect: boolean };
 
 function post(msg: unknown) {
   parent.postMessage({ pluginMessage: msg }, "*");
@@ -38,7 +43,6 @@ function urlFor(sm: SetMeta, hit: Hit, variant?: string) {
     pathForVariant(sm, hit, variant ?? sm.defaultVariant),
   );
 }
-
 function normalize(s: string) {
   return s
     .toLowerCase()
@@ -70,23 +74,24 @@ function Icon({ src, mono }: { src: string; mono: boolean }) {
 }
 
 function App() {
-  const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [index, setIndex] = useState<Index | null>(null);
-  const [status, setStatus] = useState("Loading…");
+  const [status, setStatus] = useState("Loading icon index…");
   const [query, setQuery] = useState("");
-  const [activeSet, setActiveSet] = useState<string | null>(null);
+  const [library, setLibrary] = useState(DEFAULT_LIBRARY);
+  const [variant, setVariant] = useState<string | null>(null);
+  const [view, setView] = useState<"library" | "recent" | "favorites">("library");
+  const [limit, setLimit] = useState(PAGE);
+  const [modeOverride, setModeOverride] = useState<"insert" | "replace" | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [draftUrl, setDraftUrl] = useState("");
+  const [settings, setSettings] = useState<Settings>({ naming: true, shapeDetect: true });
 
-  const [selection, setSelection] = useState<Selection>(null);
-  const [selectionSvgUrl, setSelectionSvgUrl] = useState<string | null>(null);
+  const [selection, setSelection] = useState<SelNode[]>([]);
   const [selectionSvgText, setSelectionSvgText] = useState<string | null>(null);
+  const [selectionSvgUrl, setSelectionSvgUrl] = useState<string | null>(null);
   const svgUrlRef = useRef<string | null>(null);
 
   const [favorites, setFavorites] = useState<Ref[]>([]);
   const [recents, setRecents] = useState<Ref[]>([]);
-
-  const [active, setActive] = useState<{ hit: Hit; variant: string } | null>(null);
 
   const [fingerprints, setFingerprints] = useState<Record<string, string> | null>(null);
   const [shapeMatches, setShapeMatches] = useState<{ hit: Hit; score: number }[]>([]);
@@ -97,23 +102,20 @@ function App() {
     const handler = (e: MessageEvent) => {
       const msg = e.data?.pluginMessage;
       if (!msg) return;
-      if (msg.type === "config") {
-        const url = (msg.dataUrl as string | null) ?? DEFAULT_DATA_URL;
-        setDataUrl(url);
-        setDraftUrl(url);
+      if (msg.type === "settings") {
+        setSettings(msg.settings as Settings);
       } else if (msg.type === "lists") {
         setFavorites((msg.lists?.favorites as Ref[]) ?? []);
         setRecents((msg.lists?.recents as Ref[]) ?? []);
       } else if (msg.type === "selection") {
-        setSelection(msg.node as Selection);
+        setSelection((msg.nodes as SelNode[]) ?? []);
         if (svgUrlRef.current) {
           URL.revokeObjectURL(svgUrlRef.current);
           svgUrlRef.current = null;
         }
         if (msg.svg) {
           const bytes = msg.svg as Uint8Array;
-          const blob = new Blob([bytes as BlobPart], { type: "image/svg+xml" });
-          const u = URL.createObjectURL(blob);
+          const u = URL.createObjectURL(new Blob([bytes as BlobPart], { type: "image/svg+xml" }));
           svgUrlRef.current = u;
           setSelectionSvgUrl(u);
           setSelectionSvgText(new TextDecoder().decode(bytes));
@@ -124,23 +126,16 @@ function App() {
       }
     };
     window.addEventListener("message", handler);
-    post({ type: "get-config" });
+    post({ type: "get-settings" });
     post({ type: "get-selection" });
     post({ type: "get-lists" });
-    const t = setTimeout(() => setDataUrl((cur) => cur ?? DEFAULT_DATA_URL), 600);
-    return () => {
-      window.removeEventListener("message", handler);
-      clearTimeout(t);
-    };
+    return () => window.removeEventListener("message", handler);
   }, []);
 
   // ---- Load search index ----
   useEffect(() => {
-    if (!dataUrl) return;
     let alive = true;
-    setIndex(null);
-    setStatus("Loading icon index…");
-    fetch(`${dataUrl.replace(/\/$/, "")}/data/search.json`)
+    fetch(`${DATA_URL}/data/search.json`)
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
@@ -150,14 +145,28 @@ function App() {
         setIndex(d);
         setStatus("");
       })
-      .catch((err) => {
-        if (!alive) return;
-        setStatus(`Couldn't load icons from ${dataUrl}. Check the URL in settings. (${err.message})`);
-      });
+      .catch((err) => alive && setStatus(`Couldn't load icons. (${err.message})`));
     return () => {
       alive = false;
     };
-  }, [dataUrl]);
+  }, []);
+
+  // Reset the variant when the library changes.
+  useEffect(() => {
+    if (!index || library === "all") return setVariant(null);
+    setVariant(index.sets[library]?.defaultVariant ?? null);
+  }, [library, index]);
+
+  // Reset the render window when the grid contents change.
+  useEffect(() => setLimit(PAGE), [query, library, view]);
+
+  // Grow the render window as the user scrolls near the bottom (infinite scroll).
+  function onScroll(e: React.UIEvent<HTMLDivElement>) {
+    const el = e.currentTarget;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 600) {
+      setLimit((l) => (l < allIcons.length ? l + PAGE : l));
+    }
+  }
 
   const { byKey, byNorm } = useMemo(() => {
     const byKey = new Map<string, Hit>();
@@ -166,71 +175,98 @@ function App() {
       for (const it of index.icons) {
         byKey.set(keyOf(it), it);
         const k = normalize(it.n);
-        const arr = byNorm.get(k);
-        if (arr) arr.push(it);
-        else byNorm.set(k, [it]);
+        (byNorm.get(k) ?? byNorm.set(k, []).get(k)!).push(it);
       }
     }
     return { byKey, byNorm };
   }, [index]);
 
   const favSet = useMemo(() => new Set(favorites.map(keyOf)), [favorites]);
-
-  // ---- Search ----
-  const { results, matchCount, capped } = useMemo(() => {
-    if (!index) return { results: [] as Hit[], matchCount: 0, capped: false };
-    const q = query.trim().toLowerCase();
-    if (!q) return { results: [], matchCount: 0, capped: false };
-    const out: Hit[] = [];
-    let total = 0;
-    for (const it of index.icons) {
-      if (activeSet && it.s !== activeSet) continue;
-      if (it.n.toLowerCase().includes(q)) {
-        total++;
-        if (out.length < MAX_RESULTS) out.push(it);
-      }
-    }
-    return { results: out, matchCount: total, capped: total > MAX_RESULTS };
-  }, [index, query, activeSet]);
-
-  const setList = useMemo(
+  const setEntries = useMemo(
     () => (index ? Object.entries(index.sets).sort((a, b) => a[1].name.localeCompare(b[1].name)) : []),
     [index],
   );
 
-  const nameGuesses = useMemo(() => {
-    if (!index || !selection || selection.detected) return [];
-    return byNorm.get(normalize(selection.name)) ?? [];
-  }, [index, selection, byNorm]);
-
-  // ---- Shape matching: only when unrecognized by stamp + name ----
-  const needShape = !!(
-    index && selection && !selection.detected && nameGuesses.length === 0 && selectionSvgText
-  );
-
+  // ---- Mode (auto: replace when selection, insert otherwise; manual override) ----
+  const selCount = selection.length;
+  const prevHadSel = useRef(false);
   useEffect(() => {
-    if (!needShape || !dataUrl) return;
-    if (fingerprints || fpFetching.current) return;
+    const has = selCount > 0;
+    if (has !== prevHadSel.current) {
+      prevHadSel.current = has;
+      setModeOverride(null); // selection presence flipped → re-derive
+    }
+  }, [selCount]);
+  const mode: "insert" | "replace" = modeOverride ?? (selCount >= 1 ? "replace" : "insert");
+
+  // ---- Search / home grid ----
+  const variantFor = (hit: Hit) =>
+    hit.s === library && variant ? variant : index!.sets[hit.s].defaultVariant;
+
+  // Full filtered list for the grid (windowed at render via `limit`).
+  const allIcons = useMemo(() => {
+    if (!index) return [] as Hit[];
+    const q = query.trim().toLowerCase();
+    if (q) {
+      const out: Hit[] = [];
+      for (const it of index.icons) {
+        if (library !== "all" && it.s !== library) continue;
+        if (it.n.toLowerCase().includes(q)) {
+          out.push(it);
+          if (out.length >= MAX_RESULTS) break;
+        }
+      }
+      return out;
+    }
+    if (view === "recent") return refsToHits(recents);
+    if (view === "favorites") return refsToHits(favorites);
+    if (library === "all") return [];
+    return index.icons.filter((it) => it.s === library);
+
+    function refsToHits(refs: Ref[]) {
+      return refs.map((r) => byKey.get(keyOf(r))).filter((h): h is Hit => !!h);
+    }
+  }, [index, query, library, view, recents, favorites, byKey]);
+
+  // ---- Identified selection ----
+  const identified = useMemo(() => {
+    if (!index) return [] as { node: SelNode; meta: { set: string; name: string }; hit?: Hit }[];
+    return selection
+      .filter((n) => n.detected && index.sets[n.detected.set])
+      .map((n) => ({
+        node: n,
+        meta: { set: n.detected!.set, name: n.detected!.name },
+        hit: byKey.get(`${n.detected!.set}:${n.detected!.name}`),
+      }));
+  }, [index, selection, byKey]);
+
+  const nameGuesses = useMemo(() => {
+    if (!index || selCount !== 1 || identified.length) return [];
+    return byNorm.get(normalize(selection[0].name)) ?? [];
+  }, [index, selCount, identified, selection, byNorm]);
+
+  // ---- Shape matching (single, unidentified, no name guess) ----
+  const needShape = !!(
+    settings.shapeDetect &&
+    index &&
+    selCount === 1 &&
+    identified.length === 0 &&
+    nameGuesses.length === 0 &&
+    selectionSvgText
+  );
+  useEffect(() => {
+    if (!needShape || fingerprints || fpFetching.current) return;
     fpFetching.current = true;
-    fetch(`${dataUrl.replace(/\/$/, "")}/data/fingerprints.json`)
+    fetch(`${DATA_URL}/data/fingerprints.json`)
       .then((r) => (r.ok ? r.json() : {}))
       .then((d) => setFingerprints(d as Record<string, string>))
       .catch(() => setFingerprints({}))
-      .finally(() => {
-        fpFetching.current = false;
-      });
-  }, [needShape, dataUrl, fingerprints]);
-
+      .finally(() => (fpFetching.current = false));
+  }, [needShape, fingerprints]);
   useEffect(() => {
-    if (!needShape || !fingerprints || !index || !selectionSvgText) {
-      setShapeMatches([]);
-      return;
-    }
+    if (!needShape || !fingerprints || !index || !selectionSvgText) return setShapeMatches([]);
     const sig = fingerprint(selectionSvgText);
-    if (!sig) {
-      setShapeMatches([]);
-      return;
-    }
+    if (!sig) return setShapeMatches([]);
     const scored: { hit: Hit; score: number }[] = [];
     for (const it of index.icons) {
       const fp = fingerprints[keyOf(it)];
@@ -242,122 +278,297 @@ function App() {
     setShapeMatches(scored.slice(0, 12));
   }, [needShape, fingerprints, index, selectionSvgText]);
 
-  // ---- Actions ----
+  // ---- Persistence ----
   function persist(next: { favorites?: Ref[]; recents?: Ref[] }) {
-    post({
-      type: "set-lists",
-      lists: { favorites: next.favorites ?? favorites, recents: next.recents ?? recents },
-    });
+    post({ type: "set-lists", lists: { favorites: next.favorites ?? favorites, recents: next.recents ?? recents } });
   }
-
   function toggleFav(hit: Hit) {
     const k = keyOf(hit);
-    const next = favSet.has(k)
-      ? favorites.filter((f) => keyOf(f) !== k)
-      : [{ s: hit.s, n: hit.n }, ...favorites];
+    const next = favSet.has(k) ? favorites.filter((f) => keyOf(f) !== k) : [{ s: hit.s, n: hit.n }, ...favorites];
     setFavorites(next);
     persist({ favorites: next });
   }
-
   function addRecent(hit: Hit) {
     const k = keyOf(hit);
     const next = [{ s: hit.s, n: hit.n }, ...recents.filter((r) => keyOf(r) !== k)].slice(0, MAX_RECENTS);
     setRecents(next);
     persist({ recents: next });
   }
+  function updateSettings(patch: Partial<Settings>) {
+    const next = { ...settings, ...patch };
+    setSettings(next);
+    post({ type: "set-settings", settings: next });
+  }
 
-  async function send(hit: Hit, mode: "insert" | "replace", variant?: string) {
-    if (!index) return;
-    const sm = index.sets[hit.s];
-    const v = variant ?? sm.defaultVariant;
-    const meta: IconMeta = { set: hit.s, name: hit.n, variant: v };
+  // ---- Actions ----
+  async function doInsert(hit: Hit, v: string) {
     try {
-      const svg = await fetch(urlFor(sm, hit, v)).then((r) => r.text());
-      post({ type: mode === "replace" ? "replace-svg" : "insert-svg", svg, meta });
+      const svg = await fetch(urlFor(index!.sets[hit.s], hit, v)).then((r) => r.text());
+      post({ type: "insert-svg", svg, meta: { set: hit.s, name: hit.n, variant: v } });
       addRecent(hit);
     } catch {
       setStatus("Couldn't fetch that icon — try again.");
     }
   }
-
-  function saveSettings() {
-    const url = draftUrl.trim().replace(/\/$/, "");
-    if (!url) return;
-    post({ type: "set-config", dataUrl: url });
-    setSettingsOpen(false);
-    setDataUrl(url);
+  async function replaceNodes(entries: { id: string; hit: Hit; v: string }[]) {
+    const cache = new Map<string, string>();
+    const items: { id: string; svg: string; meta: IconMeta }[] = [];
+    for (const e of entries) {
+      const url = urlFor(index!.sets[e.hit.s], e.hit, e.v);
+      const cached = cache.get(url);
+      const svg: string = cached ?? (await fetch(url).then((r) => r.text()));
+      if (cached === undefined) cache.set(url, svg);
+      items.push({ id: e.id, svg, meta: { set: e.hit.s, name: e.hit.n, variant: e.v } });
+    }
+    if (items.length) post({ type: "replace-batch", items });
+    const seen = new Set<string>();
+    for (const e of entries) if (!seen.has(keyOf(e.hit))) (seen.add(keyOf(e.hit)), addRecent(e.hit));
   }
 
-  function refsToHits(refs: Ref[]): Hit[] {
-    return refs.map((r) => byKey.get(keyOf(r))).filter((h): h is Hit => !!h);
+  function onCellClick(hit: Hit) {
+    const v = variantFor(hit);
+    if (mode === "replace" && selCount >= 1) {
+      replaceNodes(selection.map((n) => ({ id: n.id, hit, v })));
+    } else {
+      doInsert(hit, v);
+    }
   }
 
-  const cell = (hit: Hit, onClick: () => void, badge?: string) => {
+  // Library swap targets for the batch swap panel.
+  const swapTargets = useMemo(() => {
+    if (!index || identified.length < 2) return [];
+    return setEntries
+      .map(([id, meta]) => {
+        const matched = identified.filter((d) => byKey.has(`${id}:${normalizeNameTo(id, d.meta.name)}`));
+        return { id, name: meta.name, matched: matched.length };
+      })
+      .filter((t) => t.matched > 0)
+      .sort((a, b) => b.matched - a.matched);
+    // exact name in target lib (icon names are shared kebab slugs across packs)
+    function normalizeNameTo(_lib: string, name: string) {
+      return name;
+    }
+  }, [index, identified, setEntries, byKey]);
+
+  function batchSwap(targetLib: string) {
+    const entries = identified
+      .map((d) => {
+        const hit = byKey.get(`${targetLib}:${d.meta.name}`);
+        return hit ? { id: d.node.id, hit, v: index!.sets[targetLib].defaultVariant } : null;
+      })
+      .filter((e): e is { id: string; hit: Hit; v: string } => !!e);
+    if (entries.length) replaceNodes(entries);
+  }
+
+  // ---- Resize handle ----
+  function onResizeStart(e: React.PointerEvent) {
+    e.preventDefault();
+    (e.target as Element).setPointerCapture(e.pointerId);
+    const startX = e.clientX, startY = e.clientY;
+    const startW = window.innerWidth, startH = window.innerHeight;
+    const move = (ev: PointerEvent) => {
+      post({ type: "resize", width: startW + (ev.clientX - startX), height: startH + (ev.clientY - startY) });
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }
+
+  if (!index) return <div className="app"><p className="status">{status}</p></div>;
+
+  const cur = library === "all" ? null : index.sets[library];
+
+  return (
+    <div className="app">
+      {/* Selection bar */}
+      {selCount > 0 && <SelectionBar />}
+
+      {/* Header */}
+      <div className="topbar">
+        <input
+          autoFocus
+          className="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={
+            library === "all" ? `Search ${index.total.toLocaleString()} icons…` : `Search ${cur?.name}…`
+          }
+        />
+        <button className="iconbtn" title="Settings" onClick={() => setSettingsOpen((s) => !s)}>⚙</button>
+      </div>
+
+      {settingsOpen && (
+        <div className="settings">
+          <label className="toggle">
+            <input
+              type="checkbox"
+              checked={settings.naming}
+              onChange={(e) => updateSettings({ naming: e.target.checked })}
+            />
+            Name layers as <code>library/icon</code>
+          </label>
+          <label className="toggle">
+            <input
+              type="checkbox"
+              checked={settings.shapeDetect}
+              onChange={(e) => updateSettings({ shapeDetect: e.target.checked })}
+            />
+            Identify unknown icons by shape
+          </label>
+        </div>
+      )}
+
+      {/* Controls */}
+      <div className="controls">
+        <div className="seg">
+          <button className={mode === "insert" ? "on" : ""} onClick={() => setModeOverride("insert")}>Insert</button>
+          <button className={mode === "replace" ? "on" : ""} onClick={() => setModeOverride("replace")}>Replace</button>
+        </div>
+        <select className="select" value={library} onChange={(e) => setLibrary(e.target.value)}>
+          <option value="all">All libraries</option>
+          {setEntries.map(([id, m]) => (
+            <option key={id} value={id}>{m.name}</option>
+          ))}
+        </select>
+        {cur && cur.variants.length > 1 && (
+          <select className="select" value={variant ?? cur.defaultVariant} onChange={(e) => setVariant(e.target.value)}>
+            {cur.variants.map((v) => <option key={v} value={v}>{v}</option>)}
+          </select>
+        )}
+        <div className="seg view">
+          <button className={view === "library" ? "on" : ""} onClick={() => setView("library")} title="Library">▦</button>
+          <button className={view === "recent" ? "on" : ""} onClick={() => setView("recent")} title="Recent">↺</button>
+          <button className={view === "favorites" ? "on" : ""} onClick={() => setView("favorites")} title="Favorites">★</button>
+        </div>
+      </div>
+
+      {/* Grid (windowed) */}
+      <div className="scroll" onScroll={onScroll}>
+        {allIcons.length === 0 ? (
+          <p className="empty">
+            {query.trim()
+              ? `No icons match “${query}”.`
+              : view === "favorites"
+                ? "No favorites yet — hover an icon and tap ★."
+                : view === "recent"
+                  ? "No recent icons yet."
+                  : library === "all"
+                    ? "Pick a library, or search across all."
+                    : "No icons."}
+          </p>
+        ) : (
+          <>
+            <div className="grid">
+              {allIcons.slice(0, limit).map((hit) => (
+                <Cell key={keyOf(hit)} hit={hit} />
+              ))}
+            </div>
+            {limit < allIcons.length && (
+              <p className="status">Scroll for more ({(allIcons.length - limit).toLocaleString()} left)</p>
+            )}
+          </>
+        )}
+      </div>
+
+      <div className="resize" onPointerDown={onResizeStart} title="Drag to resize" />
+    </div>
+  );
+
+  function Cell({ hit }: { hit: Hit }) {
     const sm = index!.sets[hit.s];
+    const isFav = favSet.has(keyOf(hit));
     return (
       <button
-        key={keyOf(hit)}
         className="cell"
-        title={`${hit.n} · ${sm.name}${badge ? ` · ${badge}` : ""}`}
-        onClick={onClick}
+        title={`${hit.n} · ${sm.name}`}
+        onClick={() => onCellClick(hit)}
       >
-        <Icon src={urlFor(sm, hit)} mono={sm.mono} />
-        {badge && <span className="badge">{badge}</span>}
+        <Icon src={urlFor(sm, hit, variantFor(hit))} mono={sm.mono} />
+        <span
+          className={`star ${isFav ? "on" : ""}`}
+          title={isFav ? "Unfavorite" : "Favorite"}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleFav(hit);
+          }}
+        >
+          {isFav ? "★" : "☆"}
+        </span>
       </button>
     );
-  };
+  }
 
-  const openSheet = (hit: Hit) => setActive({ hit, variant: index!.sets[hit.s].defaultVariant });
-
-  // ---- Selection panel ----
-  let panel: React.ReactNode = null;
-  if (index && selection) {
-    if (selection.detected) {
-      const meta = selection.detected;
-      const sm = index.sets[meta.set];
-      const hit = byKey.get(`${meta.set}:${meta.name}`);
-      const others = (byNorm.get(normalize(meta.name)) ?? []).filter((h) => h.s !== meta.set);
-      panel = (
+  function SelectionBar() {
+    // Multiple identified → batch swap
+    if (identified.length >= 2) {
+      return (
         <div className="panel">
-          <div className="panel-head">Selected icon — identified</div>
-          <div className="ident">
-            {sm && hit && (
-              <span className="ident-thumb">
-                <Icon src={urlFor(sm, hit)} mono={sm.mono} />
-              </span>
+          <div className="panel-head">{identified.length} icons selected — swap all to</div>
+          <div className="chips">
+            {swapTargets.map((t) => (
+              <button key={t.id} className="chip" onClick={() => batchSwap(t.id)}>
+                {index!.sets[t.id].name} <span className="count">{t.matched}/{identified.length}</span>
+              </button>
+            ))}
+            {swapTargets.length === 0 && <span className="ident-sub">No other library has these icon names.</span>}
+          </div>
+        </div>
+      );
+    }
+    if (selCount === 1) {
+      // Single identified
+      if (identified.length === 1) {
+        const { meta, hit } = identified[0];
+        const sm = index!.sets[meta.set];
+        const others = (byNorm.get(normalize(meta.name)) ?? []).filter((h) => h.s !== meta.set);
+        return (
+          <div className="panel">
+            <div className="panel-head">Selected — identified</div>
+            <div className="ident">
+              {hit && <span className="ident-thumb"><Icon src={urlFor(sm, hit)} mono={sm.mono} /></span>}
+              <div>
+                <div className="ident-name">{meta.name}</div>
+                <div className="ident-sub">{sm.name}</div>
+              </div>
+            </div>
+            {others.length > 0 && (
+              <>
+                <div className="panel-sub">Same icon in other libraries</div>
+                <div className="grid small">
+                  {others.map((h) => (
+                    <SwapCell key={keyOf(h)} hit={h} targetId={selection[0].id} />
+                  ))}
+                </div>
+              </>
             )}
-            <div>
-              <div className="ident-name">{meta.name}</div>
-              <div className="ident-sub">{sm ? sm.name : meta.set} · {meta.variant}</div>
+          </div>
+        );
+      }
+      // Single unidentified
+      if (nameGuesses.length > 0) {
+        return (
+          <div className="panel">
+            <div className="panel-head">Selected layer</div>
+            <div className="panel-sub">Looks like “{selection[0].name}” — swap with</div>
+            <div className="grid small">
+              {nameGuesses.map((h) => <SwapCell key={keyOf(h)} hit={h} targetId={selection[0].id} />)}
             </div>
           </div>
-          {others.length > 0 && (
-            <>
-              <div className="panel-sub">Swap to another pack ({others.length})</div>
-              <div className="grid small">{others.map((h) => cell(h, () => send(h, "replace")))}</div>
-            </>
-          )}
-        </div>
-      );
-    } else if (nameGuesses.length > 0) {
-      panel = (
-        <div className="panel">
-          <div className="panel-head">Selected layer</div>
-          <div className="panel-sub">Looks like “{selection.name}” — swap with a library icon</div>
-          <div className="grid small">{nameGuesses.map((h) => cell(h, () => send(h, "replace")))}</div>
-        </div>
-      );
-    } else {
-      panel = (
+        );
+      }
+      return (
         <div className="panel">
           <div className="panel-head">Selected layer</div>
           {shapeMatches.length > 0 ? (
             <>
               <div className="panel-sub">Closest shapes (approximate)</div>
               <div className="grid small">
-                {shapeMatches.map(({ hit, score }) =>
-                  cell(hit, () => send(hit, "replace"), `${Math.round(score * 100)}%`),
-                )}
+                {shapeMatches.map(({ hit, score }) => (
+                  <SwapCell key={keyOf(hit)} hit={hit} targetId={selection[0].id} badge={`${Math.round(score * 100)}%`} />
+                ))}
               </div>
             </>
           ) : (
@@ -366,174 +577,35 @@ function App() {
               <div className="ident-sub">
                 {needShape && !fingerprints
                   ? "Analyzing shape…"
-                  : `“${selection.name}” isn’t recognized. Insert one below, or rename the layer to an icon name.`}
+                  : `“${selection[0].name}” isn’t recognized.`}
               </div>
             </div>
           )}
         </div>
       );
     }
+    // Multiple, fewer than 2 identified
+    return (
+      <div className="panel">
+        <div className="panel-head">{selCount} layers selected</div>
+        <div className="ident-sub">Select icons inserted from a library to swap them all.</div>
+      </div>
+    );
   }
 
-  const favHits = refsToHits(favorites);
-  const recentHits = refsToHits(recents);
-
-  return (
-    <div className="app">
-      {panel}
-
-      <div className="topbar">
-        <input
-          autoFocus
-          className="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={index ? `Search ${index.total.toLocaleString()} icons…` : "Loading…"}
-        />
-        <button className="iconbtn" title="Settings" onClick={() => setSettingsOpen((s) => !s)}>
-          ⚙
-        </button>
-      </div>
-
-      {settingsOpen && (
-        <div className="settings">
-          <label>Data source URL</label>
-          <div className="row">
-            <input
-              className="search"
-              value={draftUrl}
-              onChange={(e) => setDraftUrl(e.target.value)}
-              placeholder="https://open-icons.vercel.app"
-            />
-            <button className="primary" onClick={saveSettings}>Save</button>
-          </div>
-          <p className="hint">Points at any Open Icons deployment serving /data/search.json.</p>
-        </div>
-      )}
-
-      {index && (
-        <div className="chips">
-          <button className={`chip ${activeSet === null ? "active" : ""}`} onClick={() => setActiveSet(null)}>
-            All
-          </button>
-          {setList.map(([id, meta]) => (
-            <button
-              key={id}
-              className={`chip ${activeSet === id ? "active" : ""}`}
-              onClick={() => setActiveSet(id)}
-            >
-              {meta.name}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {status && <p className="status">{status}</p>}
-
-      {index && query.trim() && (
-        <p className="status">
-          {matchCount.toLocaleString()} match{matchCount === 1 ? "" : "es"}
-          {capped ? ` · showing first ${MAX_RESULTS}` : ""}
-        </p>
-      )}
-
-      {index && query.trim() && (
-        <div className="grid">{results.map((hit) => cell(hit, () => openSheet(hit)))}</div>
-      )}
-      {index && query.trim() && results.length === 0 && (
-        <p className="status">No icons match “{query}”.</p>
-      )}
-
-      {index && !query.trim() && (
-        <div className="scroll">
-          {favHits.length > 0 && (
-            <>
-              <div className="section">★ Favorites</div>
-              <div className="grid">{favHits.map((hit) => cell(hit, () => openSheet(hit)))}</div>
-            </>
-          )}
-          {recentHits.length > 0 && (
-            <>
-              <div className="section">Recent</div>
-              <div className="grid">{recentHits.map((hit) => cell(hit, () => openSheet(hit)))}</div>
-            </>
-          )}
-          {favHits.length === 0 && recentHits.length === 0 && !panel && (
-            <p className="empty">Type to search every Open Icons pack, then click to insert.</p>
-          )}
-        </div>
-      )}
-
-      {active && index && (
-        <div className="sheet-bg" onClick={() => setActive(null)}>
-          <div className="sheet" onClick={(e) => e.stopPropagation()}>
-            {(() => {
-              const sm = index.sets[active.hit.s];
-              const variants = Object.keys(active.hit.v);
-              const isFav = favSet.has(keyOf(active.hit));
-              return (
-                <>
-                  <div className="sheet-head">
-                    <div className="ident">
-                      <span className="ident-thumb">
-                        <Icon src={urlFor(sm, active.hit, active.variant)} mono={sm.mono} />
-                      </span>
-                      <div>
-                        <div className="ident-name">{active.hit.n}</div>
-                        <div className="ident-sub">{sm.name} · {active.variant}</div>
-                      </div>
-                    </div>
-                    <button
-                      className={`heart ${isFav ? "on" : ""}`}
-                      title={isFav ? "Unfavorite" : "Favorite"}
-                      onClick={() => toggleFav(active.hit)}
-                    >
-                      {isFav ? "★" : "☆"}
-                    </button>
-                  </div>
-                  {variants.length > 1 && (
-                    <div className="chips wrap">
-                      {variants.map((v) => (
-                        <button
-                          key={v}
-                          className={`chip ${v === active.variant ? "active" : ""}`}
-                          onClick={() => setActive({ hit: active.hit, variant: v })}
-                        >
-                          {v}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  <div className="sheet-actions">
-                    <button
-                      className="primary"
-                      onClick={() => {
-                        send(active.hit, "insert", active.variant);
-                        setActive(null);
-                      }}
-                    >
-                      Insert
-                    </button>
-                    {selection && (
-                      <button
-                        className="secondary"
-                        onClick={() => {
-                          send(active.hit, "replace", active.variant);
-                          setActive(null);
-                        }}
-                      >
-                        Replace selection
-                      </button>
-                    )}
-                  </div>
-                </>
-              );
-            })()}
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  function SwapCell({ hit, targetId, badge }: { hit: Hit; targetId: string; badge?: string }) {
+    const sm = index!.sets[hit.s];
+    return (
+      <button
+        className="cell"
+        title={`${hit.n} · ${sm.name}${badge ? ` · ${badge}` : ""}`}
+        onClick={() => replaceNodes([{ id: targetId, hit, v: sm.defaultVariant }])}
+      >
+        <Icon src={urlFor(sm, hit)} mono={sm.mono} />
+        {badge && <span className="badge">{badge}</span>}
+      </button>
+    );
+  }
 }
 
 createRoot(document.getElementById("root")!).render(<App />);
