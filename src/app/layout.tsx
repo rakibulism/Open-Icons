@@ -23,9 +23,22 @@ const SITE = SITE_URL;
 const OG_DESC =
   "Search and copy 17,000+ free, open-source SVG icons across 14 packs — Lucide, Phosphor, Tabler, Material and more. Live from source, nothing stored.";
 
+// Search-engine ownership verification. Tokens come from env (set them in
+// Vercel → Project → Settings → Environment Variables, then redeploy). Unset
+// values render no tag, so this is safe to ship before the tokens exist.
+const verification: Metadata["verification"] = {
+  ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
+    : {}),
+  ...(process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION
+    ? { other: { "msvalidate.01": process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION } }
+    : {}),
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),
   applicationName: "Open Icons",
+  verification,
   title: {
     default: "Open Icons — Browse & search open-source icon packs",
     template: "%s · Open Icons",
