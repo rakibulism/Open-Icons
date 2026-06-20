@@ -5,8 +5,9 @@ export const SITE_URL = (
 
 export const SITE_NAME = "Open Icons";
 
-/** Figma plugin install URL — placeholder until the plugin is published. */
-export const FIGMA_PLUGIN_URL = "#";
+/** Figma plugin install URL — live on the Figma Community. */
+export const FIGMA_PLUGIN_URL =
+  "https://www.figma.com/community/plugin/1650029291455166123";
 
 /** Creator's X / Twitter. */
 export const CREATOR_X = "https://x.com/rakibulism";

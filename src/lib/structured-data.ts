@@ -4,7 +4,7 @@
  * generative engines read (GEO). Keep the FAQ copy here so the visible FAQ on
  * the home page and the FAQPage schema never drift.
  */
-import { SITE_URL, SITE_NAME, CREATOR_X } from "./site";
+import { SITE_URL, SITE_NAME, CREATOR_X, FIGMA_PLUGIN_URL } from "./site";
 import type { SetSummary } from "./types";
 
 export const SITE_DESCRIPTION =
@@ -53,7 +53,21 @@ export function siteGraph() {
     offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
     publisher: { "@id": `${SITE_URL}/#org` },
   };
-  return { "@context": "https://schema.org", "@graph": [org, website, app] };
+  const plugin = {
+    "@type": "SoftwareApplication",
+    "@id": `${SITE_URL}/#figma-plugin`,
+    name: "Open Icons — Figma plugin",
+    url: FIGMA_PLUGIN_URL,
+    installUrl: FIGMA_PLUGIN_URL,
+    applicationCategory: "DesignApplication",
+    operatingSystem: "Figma",
+    description:
+      "Search and insert any of 17,000+ open-source icons as editable vectors directly in Figma, switch variants, swap a selection from one pack to another, and identify which pack a selected icon came from.",
+    isAccessibleForFree: true,
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    publisher: { "@id": `${SITE_URL}/#org` },
+  };
+  return { "@context": "https://schema.org", "@graph": [org, website, app, plugin] };
 }
 
 /** Frequently asked questions — rendered on the home page and as FAQPage JSON-LD. */

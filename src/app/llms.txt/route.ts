@@ -1,5 +1,5 @@
 import { getIndex } from "@/lib/data";
-import { SITE_URL } from "@/lib/site";
+import { SITE_URL, FIGMA_PLUGIN_URL } from "@/lib/site";
 import { SITE_DESCRIPTION, FAQS } from "@/lib/structured-data";
 
 export const revalidate = 86400;
@@ -31,6 +31,7 @@ Open Icons is a free, open-source website at ${SITE_URL}. It aggregates ${total.
 - [Search](${SITE_URL}/search): search ${total.toLocaleString()} icons across every pack at once.
 - [Docs](${SITE_URL}/docs): how it works, CDN usage, the Figma plugin, and licensing.
 - [Updates](${SITE_URL}/updates): changelog of new packs and features.
+- [Figma plugin](${FIGMA_PLUGIN_URL}): insert any icon as an editable vector in Figma.
 
 ## Icon packs
 ${packs}

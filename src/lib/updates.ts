@@ -10,6 +10,13 @@ export type Update = {
 export const UPDATES: Update[] = [
   {
     date: "2026-06-20",
+    title: "Figma plugin is live",
+    summary:
+      "The Open Icons plugin is now on the Figma Community — search and insert any icon as an editable vector, switch variants, swap a selection between packs, and identify icons in your file.",
+    tag: "new",
+  },
+  {
+    date: "2026-06-20",
     title: "A bolder identity",
     summary:
       "A vivid orange (#FF3D03) is now the brand color across buttons, accents and chips — matched to the logo. The home page leads with a warm sunset hero.",
