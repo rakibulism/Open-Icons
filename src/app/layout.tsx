@@ -23,13 +23,15 @@ const SITE = SITE_URL;
 const OG_DESC =
   "Search and copy 17,000+ free, open-source SVG icons across 14 packs — Lucide, Phosphor, Tabler, Material and more. Live from source, nothing stored.";
 
-// Search-engine ownership verification. Tokens come from env (set them in
-// Vercel → Project → Settings → Environment Variables, then redeploy). Unset
-// values render no tag, so this is safe to ship before the tokens exist.
+// Search-engine ownership verification. Tokens are public (they render in the
+// page <head>), so the Google one is baked in as a default; an env var
+// (NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION) overrides it. Bing renders only when set.
+const GOOGLE_SITE_VERIFICATION =
+  process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION ??
+  "YN4U45WFPBsKtlVzxgd1HvRJ0ZiC-J9-iOQpUnp1Psk";
+
 const verification: Metadata["verification"] = {
-  ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
-    ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
-    : {}),
+  google: GOOGLE_SITE_VERIFICATION,
   ...(process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION
     ? { other: { "msvalidate.01": process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION } }
     : {}),
