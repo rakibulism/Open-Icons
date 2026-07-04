@@ -620,10 +620,7 @@ function App() {
                     <b>{m.name}</b>
                     <span>{(iconsBySet[id]?.length ?? 0).toLocaleString()} icons</span>
                   </div>
-                  <button className="btn-primary sm" onClick={() => setLibrary(id)}>
-                    <span className="btn-glow" />
-                    <span className="btn-label">Browse →</span>
-                  </button>
+                  <button className="btn-soft" onClick={() => setLibrary(id)}>Browse →</button>
                 </div>
                 <div className="preview">
                   {(iconsBySet[id] ?? []).slice(0, PREVIEW).map((hit) => (
@@ -645,10 +642,7 @@ function App() {
                       <b>{name}</b>
                       <span>{hits.length.toLocaleString()} match{hits.length === 1 ? "" : "es"}</span>
                     </div>
-                    <button className="btn-primary sm" onClick={() => setLibrary(id)}>
-                      <span className="btn-glow" />
-                      <span className="btn-label">See all →</span>
-                    </button>
+                    <button className="btn-soft" onClick={() => setLibrary(id)}>See all →</button>
                   </div>
                   <div className="preview">
                     {hits.map((hit) => (

@@ -10,9 +10,9 @@ body {
 .app { display: flex; flex-direction: column; height: 100vh; position: relative; }
 
 /* Density → scales the whole plugin (cell size, font, spacing, controls) */
-:root { --cell: 40px; --fs: 12px; --pad: 8px; --ctl: 12px; }
-html[data-density="compact"] { --cell: 32px; --fs: 11px; --pad: 6px; --ctl: 10px; }
-html[data-density="large"] { --cell: 52px; --fs: 13px; --pad: 11px; --ctl: 14px; }
+:root { --cell: 40px; --fs: 12px; --pad: 8px; --ctl: 12px; --ctl-h: 30px; }
+html[data-density="compact"] { --cell: 32px; --fs: 11px; --pad: 6px; --ctl: 10px; --ctl-h: 26px; }
+html[data-density="large"] { --cell: 52px; --fs: 13px; --pad: 11px; --ctl: 14px; --ctl-h: 34px; }
 
 /* Theme overrides (auto = Figma's injected vars) */
 html[data-theme="light"] {
@@ -29,60 +29,74 @@ html[data-theme="dark"] {
 }
 
 /* Header */
-.topbar { display: flex; gap: 6px; padding: var(--pad) 10px calc(var(--pad) - 2px); }
+.topbar { display: flex; align-items: center; gap: 6px; padding: var(--pad) 10px calc(var(--pad) - 2px); }
 .search {
-  flex: 1; min-width: 0;
+  flex: 1; min-width: 0; height: var(--ctl-h);
   border: 1px solid var(--figma-color-border, #e6e6e6);
   background: var(--figma-color-bg-secondary, #f5f5f5);
-  color: inherit; border-radius: 6px; padding: 7px 9px; font-size: 12px; outline: none;
+  color: inherit; border-radius: 7px; padding: 0 10px; font-size: 12px; outline: none;
 }
 .search:focus { border-color: var(--figma-color-border-selected, #0d99ff); }
 .iconbtn {
-  width: 32px; flex: 0 0 auto;
+  width: var(--ctl-h); height: var(--ctl-h); flex: 0 0 auto;
+  display: inline-flex; align-items: center; justify-content: center;
   border: 1px solid var(--figma-color-border, #e6e6e6);
   background: var(--figma-color-bg, #fff); color: inherit;
-  border-radius: 6px; cursor: pointer; font-size: 13px;
+  border-radius: 7px; cursor: pointer; font-size: 13px;
 }
+.iconbtn:hover { border-color: var(--figma-color-border-selected, #0d99ff); }
 
 /* Controls row */
-.controls { display: flex; gap: 6px; align-items: center; padding: 0 10px var(--pad); flex-wrap: wrap; }
+.controls { display: flex; gap: 8px; align-items: center; padding: 0 10px var(--pad); flex-wrap: wrap; }
 .seg {
-  display: inline-flex; border: 1px solid var(--figma-color-border, #e6e6e6);
-  border-radius: 6px; overflow: hidden;
+  display: inline-flex; height: var(--ctl-h);
+  border: 1px solid var(--figma-color-border, #e6e6e6);
+  border-radius: 7px; overflow: hidden;
 }
 .seg button {
   border: none; background: var(--figma-color-bg, #fff); color: var(--figma-color-text-secondary, #888);
-  padding: 5px 10px; cursor: pointer; font-size: 11px; line-height: 1;
+  padding: 0 11px; cursor: pointer; font-size: 11px; line-height: 1;
 }
 .seg button.on { background: var(--figma-color-bg-brand, #0d99ff); color: #fff; }
-.seg.view button { padding: 5px 8px; font-size: 13px; }
+.seg.view button { padding: 0 9px; font-size: 13px; }
 .select {
+  height: var(--ctl-h);
   border: 1px solid var(--figma-color-border, #e6e6e6);
   background: var(--figma-color-bg, #fff); color: inherit;
-  border-radius: 6px; padding: 5px 6px; font-size: 11px; max-width: 130px;
+  border-radius: 7px; padding: 0 7px; font-size: 11px; max-width: 130px;
 }
 
 /* Back-to-all button (inside a package) */
 .back-btn {
-  display: inline-flex; align-items: center; gap: 2px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 3px;
+  height: var(--ctl-h);
   border: 1px solid var(--figma-color-border, #e6e6e6);
   background: var(--figma-color-bg, #fff); color: inherit;
-  border-radius: 6px; padding: 5px 9px; cursor: pointer; font-size: 11px; font-weight: 500;
+  border-radius: 7px; padding: 0 10px; cursor: pointer; font-size: 11px; font-weight: 500;
 }
 .back-btn:hover { border-color: var(--figma-color-border-selected, #0d99ff); }
 
-/* Compact primary button (home Browse buttons) */
-.btn-primary.sm { padding: 6px 13px; border-radius: 8px; }
-.btn-primary.sm .btn-label { font-size: 11px; }
+/* Quiet secondary button (per-library "Browse →" / "See all →") — a repeated
+   list action shouldn't compete with the one real primary CTA (About panel). */
+.btn-soft {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: calc(var(--ctl-h) - 4px);
+  border: 1px solid var(--figma-color-border, #e6e6e6);
+  background: var(--figma-color-bg, #fff); color: var(--figma-color-text-secondary, #888);
+  border-radius: 6px; padding: 0 10px; cursor: pointer; font-size: 11px; font-weight: 500;
+  transition: border-color 0.12s ease, color 0.12s ease;
+}
+.btn-soft:hover { border-color: var(--figma-color-border-selected, #0d99ff); color: var(--figma-color-text, #111); }
 
 /* Size control */
-.sizes { display: inline-flex; align-items: center; gap: 3px; }
-.sizes .chip { padding: 4px 6px; font-size: 10px; }
+.sizes { display: inline-flex; align-items: center; gap: 4px; }
+.sizes .chip { height: var(--ctl-h); padding: 0 8px; font-size: 10px; }
 .sizes .chip.active { background: var(--figma-color-bg-brand, #0d99ff); color: #fff; border-color: transparent; }
 .size-input {
-  width: 44px; border: 1px solid var(--figma-color-border, #e6e6e6);
+  width: 44px; height: var(--ctl-h);
+  border: 1px solid var(--figma-color-border, #e6e6e6);
   background: var(--figma-color-bg, #fff); color: inherit;
-  border-radius: 6px; padding: 4px 5px; font-size: 11px; outline: none;
+  border-radius: 7px; padding: 0 6px; font-size: 11px; outline: none;
 }
 .size-input:focus { border-color: var(--figma-color-border-selected, #0d99ff); }
 .px { font-size: 10px; color: var(--figma-color-text-secondary, #888); }
@@ -137,17 +151,18 @@ html[data-theme="dark"] {
 .scroll { flex: 1; overflow-y: auto; }
 .grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--cell), 1fr));
-  gap: 4px; padding: 4px 10px 12px; align-content: start;
+  gap: 6px; padding: 6px 10px 14px; align-content: start;
 }
 .cell {
   position: relative; aspect-ratio: 1 / 1;
   display: grid; place-items: center;
   border: 1px solid var(--figma-color-border, #e6e6e6);
   background: var(--figma-color-bg, #fff); color: inherit;
-  border-radius: 6px; cursor: pointer; padding: 6px;
+  border-radius: 7px; cursor: pointer; padding: 6px;
+  transition: border-color 0.12s ease;
 }
 .cell:hover { border-color: var(--figma-color-border-selected, #0d99ff); }
-.thumb { width: calc(var(--cell) * 0.5); height: calc(var(--cell) * 0.5); display: inline-block; }
+.thumb { width: calc(var(--cell) * 0.56); height: calc(var(--cell) * 0.56); display: inline-block; }
 .badge {
   position: absolute; bottom: 1px; right: 2px; font-size: 8px; line-height: 1;
   color: var(--figma-color-text-secondary, #888);
@@ -162,10 +177,10 @@ html[data-theme="dark"] {
 .status, .empty { color: var(--figma-color-text-secondary, #888); padding: 6px 12px; margin: 0; }
 
 /* All-libraries overview */
-.overview { padding: 2px 0 12px; }
-.lib { padding: 6px 10px 2px; }
-.lib + .lib { border-top: 1px solid var(--figma-color-border, #ececec); margin-top: 4px; }
-.lib-head { display: flex; align-items: baseline; justify-content: space-between; padding: 4px 0 6px; }
+.overview { padding: 4px 0 14px; }
+.lib { padding: 10px 10px 4px; }
+.lib + .lib { border-top: 1px solid var(--figma-color-border, #ececec); margin-top: 6px; }
+.lib-head { display: flex; align-items: center; justify-content: space-between; padding: 0 0 8px; }
 .lib-meta { display: flex; align-items: baseline; gap: 8px; }
 .lib-meta b { font-size: 12px; font-weight: 600; }
 .lib-meta span { font-size: 11px; color: var(--figma-color-text-secondary, #888); }
@@ -174,8 +189,8 @@ html[data-theme="dark"] {
   display: grid;
   grid-template-columns: repeat(auto-fill, var(--cell));
   grid-auto-rows: var(--cell);
-  gap: 4px;
-  max-height: calc(var(--cell) * 2 + 4px); /* exactly two rows */
+  gap: 6px;
+  max-height: calc(var(--cell) * 2 + 6px); /* exactly two rows */
   overflow: hidden;
   justify-content: space-between;
 }
