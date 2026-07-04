@@ -100,6 +100,7 @@ function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [size, setSize] = useState(24);
+  const [autoSize, setAutoSize] = useState(true);
   const [settings, setSettings] = useState<Settings>({
     naming: true,
     shapeDetect: true,
@@ -201,11 +202,13 @@ function App() {
     setVariant(index.sets[library]?.defaultVariant ?? null);
   }, [library, index]);
 
-  // Auto-fill the size from the selected logo / frame (first node).
+  // Auto size: keep following the selected node's own size as it changes.
+  // Off, the chosen preset/custom size stays fixed across selections.
   useEffect(() => {
+    if (!autoSize) return;
     const n = selection[0];
     if (n && (n.w || n.h)) setSize(Math.max(1, Math.round(Math.max(n.w, n.h))));
-  }, [selection]);
+  }, [selection, autoSize]);
 
   // Reset the render window when the grid contents change.
   useEffect(() => setLimit(PAGE), [query, library, view]);
@@ -664,10 +667,30 @@ function App() {
           <button className={view === "favorites" ? "on" : ""} onClick={() => setView("favorites")} title="Favorites">★</button>
         </div>
 
-        {/* Size control: presets + custom px (Shift+Arrow nudges by 4) */}
+        {/* Size control: auto (follows selection) + presets + custom px */}
         <div className="sizes">
+          <button
+            className={`chip ${autoSize ? "active" : ""}`}
+            title="Match the selected icon's current size"
+            onClick={() => {
+              setAutoSize(true);
+              const n = selection[0];
+              if (n && (n.w || n.h)) setSize(Math.max(1, Math.round(Math.max(n.w, n.h))));
+            }}
+          >
+            Auto
+          </button>
           {SIZE_PRESETS.map((s) => (
-            <button key={s} className={`chip ${size === s ? "active" : ""}`} onClick={() => setSize(s)}>{s}</button>
+            <button
+              key={s}
+              className={`chip ${!autoSize && size === s ? "active" : ""}`}
+              onClick={() => {
+                setAutoSize(false);
+                setSize(s);
+              }}
+            >
+              {s}
+            </button>
           ))}
           <input
             className="size-input"
@@ -675,10 +698,14 @@ function App() {
             min={1}
             value={size}
             title="Size in px — Shift+↑/↓ nudges by 4"
-            onChange={(e) => setSize(Math.max(1, Math.round(Number(e.target.value) || 1)))}
+            onChange={(e) => {
+              setAutoSize(false);
+              setSize(Math.max(1, Math.round(Number(e.target.value) || 1)));
+            }}
             onKeyDown={(e) => {
               if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
               e.preventDefault();
+              setAutoSize(false);
               const step = e.shiftKey ? 4 : 1;
               setSize((v) => Math.max(1, v + (e.key === "ArrowUp" ? step : -step)));
             }}
