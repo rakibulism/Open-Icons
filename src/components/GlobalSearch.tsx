@@ -11,7 +11,7 @@ type Hit = { n: string; s: string; v: Record<string, string> };
 type Index = { total: number; sets: Record<string, SetMetaIdx>; icons: Hit[] };
 
 const MAX_RESULTS = 300;
-const CHIPS_COLLAPSED_HEIGHT = 64; // ~2 rows of chips
+const CHIPS_COLLAPSED_HEIGHT = 28; // 1 row of chips — "Show more" sits on the next row
 
 export default function GlobalSearch({ initialQuery = "" }: { initialQuery?: string }) {
   const [index, setIndex] = useState<Index | null>(null);
