@@ -21,11 +21,16 @@ export default function IconDetail({
   icon,
   initialVariant,
   onClose,
+  categoryIcons,
+  onSelectIcon,
 }: {
   setMeta: SetMeta;
   icon: IconHit;
   initialVariant?: string;
   onClose: () => void;
+  /** Other icons in the same pack sharing this icon's core keyword. */
+  categoryIcons?: IconHit[];
+  onSelectIcon?: (icon: IconHit) => void;
 }) {
   const { type, pkg, version } = setMeta;
   const variantKeys = Object.keys(icon.v);
@@ -34,8 +39,21 @@ export default function IconDetail({
   );
   const [copied, setCopied] = useState<string | null>(null);
 
+  // Clicking a category icon swaps `icon` in place — reset per-icon state
+  // during render (React's recommended pattern) rather than in an effect.
+  const [shownIconName, setShownIconName] = useState(icon.n);
+  if (icon.n !== shownIconName) {
+    setShownIconName(icon.n);
+    setActiveVariant(initialVariant && icon.v[initialVariant] ? initialVariant : variantKeys[0]);
+    setCopied(null);
+  }
+
   const path = icon.v[activeVariant] ?? Object.values(icon.v)[0];
   const url = cdnUrl({ type, pkg }, version, path);
+  const categoryThumbUrl = (h: IconHit) => {
+    const p = h.v[activeVariant] ?? Object.values(h.v)[0];
+    return cdnUrl({ type, pkg }, version, p);
+  };
 
   const flash = (label: string) => {
     setCopied(label);
@@ -120,6 +138,24 @@ export default function IconDetail({
           <ActionButton onClick={copyName} active={copied === "name"} label="Copy name" done="Copied!" />
           <ActionButton onClick={copyUrl} active={copied === "url"} label="Copy CDN URL" done="Copied!" />
         </div>
+
+        {categoryIcons && categoryIcons.length > 0 && (
+          <div className="mt-6 border-t pt-4">
+            <p className="mb-2.5 text-xs font-medium text-muted">Icons in this category</p>
+            <div className="grid max-h-40 grid-cols-6 gap-1.5 overflow-y-auto sm:grid-cols-7">
+              {categoryIcons.map((h) => (
+                <button
+                  key={h.n}
+                  onClick={() => onSelectIcon?.(h)}
+                  title={h.n}
+                  className="grid aspect-square place-items-center rounded-md border bg-background p-1.5 text-foreground transition-colors hover:border-border-strong"
+                >
+                  <IconImage src={categoryThumbUrl(h)} alt={h.n} mono={setMeta.mono} className="h-4 w-4" />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

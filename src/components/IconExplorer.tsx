@@ -27,6 +27,14 @@ export default function IconExplorer({ manifest }: Props) {
   // Reset pagination whenever the query changes.
   useEffect(() => setLimit(PAGE), [query]);
 
+  // Other icons in this pack sharing the selected icon's core keyword.
+  const categoryIcons = useMemo(() => {
+    if (!selected) return [];
+    const keyword = selected.n.split("-")[0];
+    if (!keyword) return [];
+    return manifest.icons.filter((i) => i.n !== selected.n && i.n.includes(keyword)).slice(0, 21);
+  }, [selected, manifest.icons]);
+
   const url = useCallback(
     (icon: ManifestIcon) => {
       const path = icon.v[variant] ?? Object.values(icon.v)[0];
@@ -48,8 +56,17 @@ export default function IconExplorer({ manifest }: Props) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={`Search ${manifest.count.toLocaleString()} ${manifest.name} icons…`}
-              className="w-full rounded-lg border bg-surface px-4 py-2.5 text-sm outline-none transition-colors focus:border-border-strong"
+              className="w-full rounded-lg border bg-surface px-4 py-2.5 pr-9 text-sm outline-none transition-colors focus:border-border-strong"
             />
+            {query && (
+              <button
+                onClick={() => setQuery("")}
+                aria-label="Clear search"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-1 text-muted hover:bg-accent hover:text-foreground"
+              >
+                ✕
+              </button>
+            )}
           </div>
           {variants.length > 1 && (
             <div className="flex flex-wrap gap-1">
@@ -118,6 +135,8 @@ export default function IconExplorer({ manifest }: Props) {
           icon={selected}
           initialVariant={variant}
           onClose={() => setSelected(null)}
+          categoryIcons={categoryIcons}
+          onSelectIcon={(i) => setSelected(manifest.icons.find((m) => m.n === i.n) ?? selected)}
         />
       )}
     </div>
