@@ -70,56 +70,58 @@ export default function GlobalSearch({ initialQuery = "" }: { initialQuery?: str
 
   return (
     <div>
-      {/* Search bar */}
-      <div className="relative">
-        <input
-          autoFocus
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={
-            index
-              ? `Search ${index.total.toLocaleString()} icons across all packs…`
-              : "Loading icons…"
-          }
-          className="w-full rounded-xl border bg-surface px-5 py-4 pr-11 text-base outline-none transition-colors focus:border-border-strong"
-        />
-        {query && (
-          <button
-            onClick={() => setQuery("")}
-            aria-label="Clear search"
-            className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded p-1.5 text-muted hover:bg-accent hover:text-foreground"
-          >
-            ✕
-          </button>
-        )}
-      </div>
-
-      {/* Set filter */}
-      {index && (
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          <Chip active={activeSet === null} onClick={() => setActiveSet(null)}>
-            All packs
-          </Chip>
-          {setList.map(([id, meta]) => (
-            <Chip key={id} active={activeSet === id} onClick={() => setActiveSet(id)}>
-              {meta.name}
-            </Chip>
-          ))}
+      <div className="sticky top-14 z-20 -mx-5 mb-6 border-b bg-background/85 px-5 py-4 backdrop-blur-md">
+        {/* Search bar */}
+        <div className="relative">
+          <input
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={
+              index
+                ? `Search ${index.total.toLocaleString()} icons across all packs…`
+                : "Loading icons…"
+            }
+            className="w-full rounded-xl border bg-surface px-5 py-4 pr-11 text-base outline-none transition-colors focus:border-border-strong"
+          />
+          {query && (
+            <button
+              onClick={() => setQuery("")}
+              aria-label="Clear search"
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded p-1.5 text-muted hover:bg-accent hover:text-foreground"
+            >
+              ✕
+            </button>
+          )}
         </div>
-      )}
 
-      {/* Status line */}
-      <p className="mt-4 text-xs text-muted">
-        {error
-          ? "Couldn’t load the icon index. Try refreshing."
-          : !index
-            ? "Loading icon index…"
-            : !deferredQuery.trim()
-              ? "Type to search every icon across all packs."
-              : `${matchCount.toLocaleString()} match${matchCount === 1 ? "" : "es"}${
-                  capped ? ` · showing first ${MAX_RESULTS}` : ""
-                }`}
-      </p>
+        {/* Set filter */}
+        {index && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            <Chip active={activeSet === null} onClick={() => setActiveSet(null)}>
+              All packs
+            </Chip>
+            {setList.map(([id, meta]) => (
+              <Chip key={id} active={activeSet === id} onClick={() => setActiveSet(id)}>
+                {meta.name}
+              </Chip>
+            ))}
+          </div>
+        )}
+
+        {/* Status line */}
+        <p className="mt-3 text-xs text-muted">
+          {error
+            ? "Couldn’t load the icon index. Try refreshing."
+            : !index
+              ? "Loading icon index…"
+              : !deferredQuery.trim()
+                ? "Type to search every icon across all packs."
+                : `${matchCount.toLocaleString()} match${matchCount === 1 ? "" : "es"}${
+                    capped ? ` · showing first ${MAX_RESULTS}` : ""
+                  }`}
+        </p>
+      </div>
 
       {/* Results */}
       {index && deferredQuery.trim() && (
