@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useDeferredValue } from "react";
+import { useEffect, useMemo, useRef, useState, useDeferredValue } from "react";
 import { cdnUrl } from "@/lib/sources";
 import { searchMatches } from "@/lib/search-aliases";
 import IconImage from "./IconImage";
@@ -11,6 +11,7 @@ type Hit = { n: string; s: string; v: Record<string, string> };
 type Index = { total: number; sets: Record<string, SetMetaIdx>; icons: Hit[] };
 
 const MAX_RESULTS = 300;
+const CHIPS_COLLAPSED_HEIGHT = 64; // ~2 rows of chips
 
 export default function GlobalSearch({ initialQuery = "" }: { initialQuery?: string }) {
   const [index, setIndex] = useState<Index | null>(null);
@@ -18,6 +19,9 @@ export default function GlobalSearch({ initialQuery = "" }: { initialQuery?: str
   const [query, setQuery] = useState(initialQuery);
   const [activeSet, setActiveSet] = useState<string | null>(null);
   const [selected, setSelected] = useState<Hit | null>(null);
+  const [chipsExpanded, setChipsExpanded] = useState(false);
+  const [chipsOverflow, setChipsOverflow] = useState(false);
+  const chipsRef = useRef<HTMLDivElement>(null);
 
   const deferredQuery = useDeferredValue(query);
 
@@ -45,6 +49,24 @@ export default function GlobalSearch({ initialQuery = "" }: { initialQuery?: str
     () => (index ? Object.entries(index.sets).sort((a, b) => a[1].name.localeCompare(b[1].name)) : []),
     [index],
   );
+
+  // Cap the pack-filter chips to ~2 rows by default, with a "Show more"
+  // toggle when there are enough packs to overflow that — keeps the sticky
+  // bar's height predictable across breakpoints instead of growing with
+  // however many chips happen to wrap.
+  useEffect(() => {
+    const el = chipsRef.current;
+    if (!el) return;
+    const check = () => setChipsOverflow(el.scrollHeight > CHIPS_COLLAPSED_HEIGHT + 2);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    window.addEventListener("resize", check);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", check);
+    };
+  }, [setList]);
 
   // Searching across all packs: group matches by pack instead of one mixed
   // grid, so results read as "Bootstrap: bell", "Doodle Icons: bell-related".
@@ -98,15 +120,29 @@ export default function GlobalSearch({ initialQuery = "" }: { initialQuery?: str
 
           {/* Set filter — second half */}
           {index && (
-            <div className="flex flex-wrap content-start gap-1.5 md:w-1/2">
-              <Chip active={activeSet === null} onClick={() => setActiveSet(null)}>
-                All packs
-              </Chip>
-              {setList.map(([id, meta]) => (
-                <Chip key={id} active={activeSet === id} onClick={() => setActiveSet(id)}>
-                  {meta.name}
+            <div className="md:w-1/2">
+              <div
+                ref={chipsRef}
+                className="flex flex-wrap content-start gap-1.5 overflow-hidden"
+                style={{ maxHeight: chipsExpanded ? undefined : CHIPS_COLLAPSED_HEIGHT }}
+              >
+                <Chip active={activeSet === null} onClick={() => setActiveSet(null)}>
+                  All packs
                 </Chip>
-              ))}
+                {setList.map(([id, meta]) => (
+                  <Chip key={id} active={activeSet === id} onClick={() => setActiveSet(id)}>
+                    {meta.name}
+                  </Chip>
+                ))}
+              </div>
+              {chipsOverflow && (
+                <button
+                  onClick={() => setChipsExpanded((v) => !v)}
+                  className="mt-1.5 text-xs font-medium text-muted hover:text-foreground"
+                >
+                  {chipsExpanded ? "Show less ↑" : "Show more ↓"}
+                </button>
+              )}
             </div>
           )}
         </div>
