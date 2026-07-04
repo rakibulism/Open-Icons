@@ -167,9 +167,13 @@ html[data-theme="dark"] {
   border: 1px solid var(--figma-color-border, #e6e6e6);
   background: var(--figma-color-bg, #fff); color: inherit;
   border-radius: 7px; cursor: pointer; padding: 6px;
-  transition: border-color 0.12s ease;
+  transition: border-color 0.12s ease, box-shadow 0.3s ease;
 }
 .cell:hover { border-color: var(--figma-color-border-selected, #0d99ff); }
+.cell.highlight {
+  border-color: var(--figma-color-border-selected, #0d99ff);
+  box-shadow: 0 0 0 2px var(--figma-color-border-selected, #0d99ff);
+}
 .thumb { width: calc(var(--cell) * 0.56); height: calc(var(--cell) * 0.56); display: inline-block; }
 .badge {
   position: absolute; bottom: 1px; right: 2px; font-size: 8px; line-height: 1;

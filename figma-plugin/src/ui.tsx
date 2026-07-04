@@ -313,17 +313,41 @@ function App() {
   }, [index, selection, byKey]);
 
   // When exactly one identified icon is selected on canvas, jump the browser
-  // into that icon's library automatically. Tracked per selection so it only
-  // fires once per selection change — it won't fight a manual library switch
-  // made while the same node stays selected.
+  // into that icon's library and reveal it — searching its exact name rather
+  // than blindly rendering everything up to it, so this stays instant even
+  // deep into a 5,000-icon library (forcing the whole prefix to render would
+  // fire one image request per icon at once). Tracked per selection so it
+  // only fires once per selection change — it won't fight a manual library
+  // switch made while the same node stays selected.
   const autoNavKeyRef = useRef<string | null>(null);
+  const scrollTargetRef = useRef<{ s: string; n: string } | null>(null);
+  const [highlightKey, setHighlightKey] = useState<string | null>(null);
   useEffect(() => {
     const selKey = selection.map((n) => n.id).join(",");
     if (identified.length !== 1 || autoNavKeyRef.current === selKey) return;
     autoNavKeyRef.current = selKey;
-    setLibrary(identified[0].meta.set);
+    const { set, name } = identified[0].meta;
+    setLibrary(set);
     setView("library");
+    setQuery(name);
+    scrollTargetRef.current = { s: set, n: name };
   }, [identified, selection]);
+
+  // Once the search reveals the target icon, scroll its cell into view and
+  // flash it. The query match keeps the rendered list tiny, so this never
+  // needs to grow `limit` beyond its default.
+  useEffect(() => {
+    const target = scrollTargetRef.current;
+    if (!target || library !== target.s) return;
+    const key = keyOf({ s: target.s, n: target.n });
+    const el = document.querySelector(`[data-key="${key}"]`);
+    if (!el) return; // not painted yet — effect re-runs once allIcons settles
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    scrollTargetRef.current = null;
+    setHighlightKey(key);
+    const t = setTimeout(() => setHighlightKey(null), 1600);
+    return () => clearTimeout(t);
+  }, [library, allIcons]);
 
   const nameGuesses = useMemo(() => {
     if (!index || selCount !== 1 || identified.length) return [];
@@ -702,9 +726,11 @@ function App() {
   function Cell({ hit }: { hit: Hit }) {
     const sm = index!.sets[hit.s];
     const isFav = favSet.has(keyOf(hit));
+    const key = keyOf(hit);
     return (
       <button
-        className="cell"
+        className={`cell ${highlightKey === key ? "highlight" : ""}`}
+        data-key={key}
         title={`${hit.n} · ${sm.name}`}
         onClick={() => onCellClick(hit)}
       >
