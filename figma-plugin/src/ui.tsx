@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 // Shared with the website — single source of truth for CDN URLs + geometry.
 import { cdnUrl } from "../../src/lib/sources";
 import { fingerprint, similarity } from "../../src/lib/fingerprint";
+import { matchesQuery } from "../../src/lib/search-aliases";
 
 const DATA_URL = "https://open-icons.vercel.app";
 const DEFAULT_LIBRARY = "all";
@@ -254,12 +255,12 @@ function App() {
   // Full filtered list for the grid (windowed at render via `limit`).
   const allIcons = useMemo(() => {
     if (!index) return [] as Hit[];
-    const q = query.trim().toLowerCase();
+    const q = query.trim();
     if (q) {
       const out: Hit[] = [];
       for (const it of index.icons) {
         if (library !== "all" && it.s !== library) continue;
-        if (it.n.toLowerCase().includes(q)) {
+        if (matchesQuery(it.n.toLowerCase(), q)) {
           out.push(it);
           if (out.length >= MAX_RESULTS) break;
         }

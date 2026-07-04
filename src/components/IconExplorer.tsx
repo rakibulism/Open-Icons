@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useCallback, useEffect } from "react";
 import { cdnUrl } from "@/lib/sources";
+import { matchesQuery } from "@/lib/search-aliases";
 import type { ManifestIcon, SetManifest } from "@/lib/types";
 import IconImage from "./IconImage";
 import IconDetail from "./IconDetail";
@@ -18,10 +19,10 @@ export default function IconExplorer({ manifest }: Props) {
   const [selected, setSelected] = useState<ManifestIcon | null>(null);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = query.trim();
     if (!q) return manifest.icons;
     return manifest.icons.filter(
-      (i) => i.n.toLowerCase().includes(q) || i.c?.toLowerCase().includes(q),
+      (i) => matchesQuery(i.n.toLowerCase(), q) || (i.c && matchesQuery(i.c.toLowerCase(), q)),
     );
   }, [query, manifest.icons]);
 
