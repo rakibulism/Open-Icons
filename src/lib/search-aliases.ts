@@ -31,3 +31,44 @@ export function matchesQuery(text: string, query: string): boolean {
   }
   return false;
 }
+
+const MIN_PREFIX = 2;
+const MAX_PREFIX = 7;
+const ENOUGH_RESULTS = 8;
+
+/**
+ * Filter `items` by `query`, run against `getText(item)`. Exact/alias matches
+ * (see `matchesQuery`) always win. This also always supplements them with a
+ * one-shorter-prefix fallback — e.g. typing "globe" also surfaces "global",
+ * because they share a "glob" prefix — regardless of how many exact matches
+ * there already are, so close relatives never get hidden behind a full word.
+ * Only cascades to even shorter prefixes (down to 2 characters) when results
+ * are still thin, so a short query doesn't end up matching everything.
+ */
+export function searchMatches<T>(items: T[], query: string, getText: (item: T) => string): T[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return items;
+
+  const seen = new Set<T>();
+  const out: T[] = [];
+  const addAll = (matches: (text: string) => boolean) => {
+    for (const it of items) {
+      if (seen.has(it)) continue;
+      if (matches(getText(it))) {
+        seen.add(it);
+        out.push(it);
+      }
+    }
+  };
+
+  addAll((text) => matchesQuery(text, q));
+
+  const firstFallbackLen = Math.min(q.length - 1, MAX_PREFIX);
+  for (let len = firstFallbackLen; len >= MIN_PREFIX; len--) {
+    if (len < firstFallbackLen && out.length >= ENOUGH_RESULTS) break;
+    const prefix = q.slice(0, len);
+    addAll((text) => text.includes(prefix));
+  }
+
+  return out;
+}

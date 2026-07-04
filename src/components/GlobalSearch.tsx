@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useDeferredValue } from "react";
 import { cdnUrl } from "@/lib/sources";
-import { matchesQuery } from "@/lib/search-aliases";
+import { searchMatches } from "@/lib/search-aliases";
 import IconImage from "./IconImage";
 import IconDetail, { type SetMeta } from "./IconDetail";
 
@@ -36,16 +36,9 @@ export default function GlobalSearch({ initialQuery = "" }: { initialQuery?: str
     if (!index) return { results: [] as Hit[], capped: false, matchCount: 0 };
     const q = deferredQuery.trim();
     if (!q) return { results: [], capped: false, matchCount: 0 };
-    const out: Hit[] = [];
-    let total = 0;
-    for (const it of index.icons) {
-      if (activeSet && it.s !== activeSet) continue;
-      if (matchesQuery(it.n.toLowerCase(), q)) {
-        total++;
-        if (out.length < MAX_RESULTS) out.push(it);
-      }
-    }
-    return { results: out, capped: total > MAX_RESULTS, matchCount: total };
+    const pool = activeSet ? index.icons.filter((it) => it.s === activeSet) : index.icons;
+    const matched = searchMatches(pool, q, (it) => it.n.toLowerCase());
+    return { results: matched.slice(0, MAX_RESULTS), capped: matched.length > MAX_RESULTS, matchCount: matched.length };
   }, [index, deferredQuery, activeSet]);
 
   const setList = useMemo(

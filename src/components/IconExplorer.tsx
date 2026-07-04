@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useCallback, useEffect } from "react";
 import { cdnUrl } from "@/lib/sources";
-import { matchesQuery } from "@/lib/search-aliases";
+import { searchMatches } from "@/lib/search-aliases";
 import type { ManifestIcon, SetManifest } from "@/lib/types";
 import IconImage from "./IconImage";
 import IconDetail from "./IconDetail";
@@ -21,9 +21,7 @@ export default function IconExplorer({ manifest }: Props) {
   const filtered = useMemo(() => {
     const q = query.trim();
     if (!q) return manifest.icons;
-    return manifest.icons.filter(
-      (i) => matchesQuery(i.n.toLowerCase(), q) || (i.c && matchesQuery(i.c.toLowerCase(), q)),
-    );
+    return searchMatches(manifest.icons, q, (i) => `${i.n} ${i.c ?? ""}`.toLowerCase());
   }, [query, manifest.icons]);
 
   // Reset pagination whenever the query changes.

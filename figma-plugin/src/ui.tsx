@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 // Shared with the website — single source of truth for CDN URLs + geometry.
 import { cdnUrl } from "../../src/lib/sources";
 import { fingerprint, similarity } from "../../src/lib/fingerprint";
-import { matchesQuery } from "../../src/lib/search-aliases";
+import { searchMatches } from "../../src/lib/search-aliases";
 
 const DATA_URL = "https://open-icons.vercel.app";
 const DEFAULT_LIBRARY = "all";
@@ -276,15 +276,8 @@ function App() {
     const q = query.trim();
     if (q) {
       if (library === "all" && settings.groupSearchByLibrary) return [];
-      const out: Hit[] = [];
-      for (const it of index.icons) {
-        if (library !== "all" && it.s !== library) continue;
-        if (matchesQuery(it.n.toLowerCase(), q)) {
-          out.push(it);
-          if (out.length >= MAX_RESULTS) break;
-        }
-      }
-      return out;
+      const pool = library === "all" ? index.icons : (iconsBySet[library] ?? []);
+      return searchMatches(pool, q, (it) => it.n.toLowerCase()).slice(0, MAX_RESULTS);
     }
     if (view === "recent") return refsToHits(recents);
     if (view === "favorites") return refsToHits(favorites);
@@ -306,14 +299,9 @@ function App() {
     }
     const q = query.trim();
     if (!q) return [];
+    const matched = searchMatches(index.icons, q, (it) => it.n.toLowerCase()).slice(0, MAX_RESULTS);
     const bySet = new Map<string, Hit[]>();
-    let total = 0;
-    for (const it of index.icons) {
-      if (total >= MAX_RESULTS) break;
-      if (!matchesQuery(it.n.toLowerCase(), q)) continue;
-      (bySet.get(it.s) ?? bySet.set(it.s, []).get(it.s)!).push(it);
-      total++;
-    }
+    for (const it of matched) (bySet.get(it.s) ?? bySet.set(it.s, []).get(it.s)!).push(it);
     return setEntries
       .filter(([id]) => bySet.has(id))
       .map(([id, m]) => ({ id, name: m.name, hits: bySet.get(id)! }));
