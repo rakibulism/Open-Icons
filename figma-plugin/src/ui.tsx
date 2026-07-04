@@ -33,6 +33,8 @@ type Settings = {
   shapeDetect: boolean;
   theme: "auto" | "light" | "dark";
   density: "compact" | "default" | "large";
+  autoJumpToLibrary: boolean;
+  groupSearchByLibrary: boolean;
 };
 
 const SIZE_PRESETS = [16, 24, 32, 48, 64];
@@ -103,6 +105,8 @@ function App() {
     shapeDetect: true,
     theme: "auto",
     density: "default",
+    autoJumpToLibrary: true,
+    groupSearchByLibrary: true,
   });
 
   const [selection, setSelection] = useState<SelNode[]>([]);
@@ -178,6 +182,18 @@ function App() {
     document.documentElement.dataset.theme = settings.theme;
     document.documentElement.dataset.density = settings.density;
   }, [settings.theme, settings.density]);
+
+  // Close whichever modal is open on Escape.
+  useEffect(() => {
+    if (!settingsOpen && !aboutOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setSettingsOpen(false);
+      setAboutOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [settingsOpen, aboutOpen]);
 
   // Reset the variant when the library changes.
   useEffect(() => {
@@ -259,10 +275,10 @@ function App() {
     if (!index) return [] as Hit[];
     const q = query.trim();
     if (q) {
-      if (library === "all") return [];
+      if (library === "all" && settings.groupSearchByLibrary) return [];
       const out: Hit[] = [];
       for (const it of index.icons) {
-        if (it.s !== library) continue;
+        if (library !== "all" && it.s !== library) continue;
         if (matchesQuery(it.n.toLowerCase(), q)) {
           out.push(it);
           if (out.length >= MAX_RESULTS) break;
@@ -278,13 +294,16 @@ function App() {
     function refsToHits(refs: Ref[]) {
       return refs.map((r) => byKey.get(keyOf(r))).filter((h): h is Hit => !!h);
     }
-  }, [index, query, library, view, recents, favorites, byKey, iconsBySet]);
+  }, [index, query, library, view, recents, favorites, byKey, iconsBySet, settings.groupSearchByLibrary]);
 
   // Searching across "All libraries": group matches by pack, so results read
   // as "Bootstrap: bell", "Doodle Icons: bell-related", etc. instead of one
-  // mixed grid.
+  // mixed grid. Only computed when the setting is on — otherwise `allIcons`
+  // above already holds the flat combined results.
   const groupedResults = useMemo(() => {
-    if (!index || library !== "all") return [] as { id: string; name: string; hits: Hit[] }[];
+    if (!index || library !== "all" || !settings.groupSearchByLibrary) {
+      return [] as { id: string; name: string; hits: Hit[] }[];
+    }
     const q = query.trim();
     if (!q) return [];
     const bySet = new Map<string, Hit[]>();
@@ -298,7 +317,7 @@ function App() {
     return setEntries
       .filter(([id]) => bySet.has(id))
       .map(([id, m]) => ({ id, name: m.name, hits: bySet.get(id)! }));
-  }, [index, query, library, setEntries]);
+  }, [index, query, library, setEntries, settings.groupSearchByLibrary]);
 
   // ---- Identified selection ----
   const identified = useMemo(() => {
@@ -324,14 +343,14 @@ function App() {
   const [highlightKey, setHighlightKey] = useState<string | null>(null);
   useEffect(() => {
     const selKey = selection.map((n) => n.id).join(",");
-    if (identified.length !== 1 || autoNavKeyRef.current === selKey) return;
+    if (!settings.autoJumpToLibrary || identified.length !== 1 || autoNavKeyRef.current === selKey) return;
     autoNavKeyRef.current = selKey;
     const { set, name } = identified[0].meta;
     setLibrary(set);
     setView("library");
     setQuery(name);
     scrollTargetRef.current = { s: set, n: name };
-  }, [identified, selection]);
+  }, [identified, selection, settings.autoJumpToLibrary]);
 
   // Once the search reveals the target icon, scroll its cell into view and
   // flash it. The query match keeps the rendered list tiny, so this never
@@ -560,43 +579,62 @@ function App() {
       </div>
 
       {settingsOpen && (
-        <div className="settings">
-          <div className="set-row">
-            <span>Theme</span>
-            <select className="select" value={settings.theme} onChange={(e) => updateSettings({ theme: e.target.value as Settings["theme"] })}>
-              <option value="auto">Device default</option>
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-            </select>
+        <Modal title="Settings" onClose={() => setSettingsOpen(false)}>
+          <div className="settings">
+            <div className="set-row">
+              <span>Theme</span>
+              <select className="select" value={settings.theme} onChange={(e) => updateSettings({ theme: e.target.value as Settings["theme"] })}>
+                <option value="auto">Device default</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+              </select>
+            </div>
+            <div className="set-row">
+              <span>Density</span>
+              <select className="select" value={settings.density} onChange={(e) => updateSettings({ density: e.target.value as Settings["density"] })}>
+                <option value="compact">Compact</option>
+                <option value="default">Default</option>
+                <option value="large">Large</option>
+              </select>
+            </div>
+            <label className="toggle">
+              <input type="checkbox" checked={settings.naming} onChange={(e) => updateSettings({ naming: e.target.checked })} />
+              Name layers as <code>library/icon</code>
+            </label>
+            <label className="toggle">
+              <input type="checkbox" checked={settings.shapeDetect} onChange={(e) => updateSettings({ shapeDetect: e.target.checked })} />
+              Identify unknown icons by shape
+            </label>
+            <label className="toggle">
+              <input
+                type="checkbox"
+                checked={settings.autoJumpToLibrary}
+                onChange={(e) => updateSettings({ autoJumpToLibrary: e.target.checked })}
+              />
+              Jump to a selected icon's library automatically
+            </label>
+            <label className="toggle">
+              <input
+                type="checkbox"
+                checked={settings.groupSearchByLibrary}
+                onChange={(e) => updateSettings({ groupSearchByLibrary: e.target.checked })}
+              />
+              Group search results by library
+            </label>
           </div>
-          <div className="set-row">
-            <span>Density</span>
-            <select className="select" value={settings.density} onChange={(e) => updateSettings({ density: e.target.value as Settings["density"] })}>
-              <option value="compact">Compact</option>
-              <option value="default">Default</option>
-              <option value="large">Large</option>
-            </select>
-          </div>
-          <label className="toggle">
-            <input type="checkbox" checked={settings.naming} onChange={(e) => updateSettings({ naming: e.target.checked })} />
-            Name layers as <code>library/icon</code>
-          </label>
-          <label className="toggle">
-            <input type="checkbox" checked={settings.shapeDetect} onChange={(e) => updateSettings({ shapeDetect: e.target.checked })} />
-            Identify unknown icons by shape
-          </label>
-        </div>
+        </Modal>
       )}
 
       {aboutOpen && (
-        <div className="settings about">
-          <div className="about-title">Open Icons</div>
-          <a className="btn-primary" href={SITE_URL} target="_blank" rel="noreferrer">
-            <span className="btn-glow" />
-            <span className="btn-label">Visit {SITE_URL.replace("https://", "")} ↗</span>
-          </a>
-          <a className="about-link" href={CREATOR_X} target="_blank" rel="noreferrer">Made by @rakibulism on X →</a>
-        </div>
+        <Modal title="Open Icons" onClose={() => setAboutOpen(false)}>
+          <div className="settings about">
+            <a className="btn-primary" href={SITE_URL} target="_blank" rel="noreferrer">
+              <span className="btn-glow" />
+              <span className="btn-label">Visit {SITE_URL.replace("https://", "")} ↗</span>
+            </a>
+            <a className="about-link" href={CREATOR_X} target="_blank" rel="noreferrer">Made by @rakibulism on X →</a>
+          </div>
+        </Modal>
       )}
 
       {/* Controls */}
@@ -672,7 +710,7 @@ function App() {
               </div>
             ))}
           </div>
-        ) : library === "all" && query.trim() ? (
+        ) : library === "all" && query.trim() && settings.groupSearchByLibrary ? (
           groupedResults.length === 0 ? (
             <p className="empty">No icons match “{query}”.</p>
           ) : (
@@ -861,6 +899,20 @@ function App() {
         <Icon src={urlFor(sm, hit)} mono={sm.mono} />
         {badge && <span className="badge">{badge}</span>}
       </button>
+    );
+  }
+
+  function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-head">
+            <b>{title}</b>
+            <button className="iconbtn" title="Close" onClick={onClose}>✕</button>
+          </div>
+          {children}
+        </div>
+      </div>
     );
   }
 }

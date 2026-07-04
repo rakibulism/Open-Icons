@@ -24,10 +24,19 @@ type Settings = {
   shapeDetect: boolean;
   theme: "auto" | "light" | "dark";
   density: "compact" | "default" | "large";
+  autoJumpToLibrary: boolean;
+  groupSearchByLibrary: boolean;
 };
 type Lists = { favorites: unknown[]; recents: unknown[] };
 
-let settings: Settings = { naming: true, shapeDetect: true, theme: "auto", density: "default" };
+let settings: Settings = {
+  naming: true,
+  shapeDetect: true,
+  theme: "auto",
+  density: "default",
+  autoJumpToLibrary: true,
+  groupSearchByLibrary: true,
+};
 
 const NAME_RE = /^([a-z0-9][a-z0-9-]*)\/(.+)$/i;
 

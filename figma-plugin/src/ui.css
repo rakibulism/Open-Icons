@@ -111,9 +111,38 @@ html[data-theme="dark"] {
 
 /* Settings rows */
 .set-row { display: flex; align-items: center; justify-content: space-between; font-size: 12px; }
-.about-title { font-weight: 600; font-size: 13px; }
 .about a, .about-link { color: var(--figma-color-text-brand, #0d99ff); text-decoration: none; font-size: 12px; }
 .about { gap: 10px; }
+
+/* Settings / About modal */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.32); padding: 24px;
+  animation: oi-fade-in 0.15s ease;
+}
+.modal {
+  width: 100%; max-width: 300px; max-height: 100%; overflow-y: auto;
+  background: var(--figma-color-bg, #fff); color: inherit;
+  border: 1px solid var(--figma-color-border, #e6e6e6);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.28);
+  animation: oi-modal-in 0.16s cubic-bezier(0.2, 0, 0, 1);
+}
+.modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 8px 10px 14px; border-bottom: 1px solid var(--figma-color-border, #e6e6e6);
+}
+.modal-head b { font-size: 13px; font-weight: 600; }
+.modal .settings { padding: 12px 14px 14px; }
+@keyframes oi-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes oi-modal-in {
+  from { opacity: 0; transform: translateY(4px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay, .modal { animation: none; }
+}
 
 /* Primary button — dark gradient pill with rotating rainbow glow */
 .btn-primary {
