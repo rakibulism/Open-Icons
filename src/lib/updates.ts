@@ -9,6 +9,34 @@ export type Update = {
 
 export const UPDATES: Update[] = [
   {
+    date: "2026-07-04",
+    title: "Smarter search, everywhere",
+    summary:
+      "Search now catches close relatives even without an exact match — typing \"globe\" also finds \"global\" — and packs that name things differently (like \"user group\") surface under the common term. Searching across all packs now groups results by pack instead of one mixed grid, and every icon view shows related icons from the same pack.",
+    tag: "improved",
+  },
+  {
+    date: "2026-07-04",
+    title: "Figma plugin: jump straight to a selected icon",
+    summary:
+      "Select an identified icon on the canvas and the plugin now jumps into that icon's library, reveals it, and flashes a highlight — instead of leaving you wherever you were browsing. Toggleable in Settings.",
+    tag: "new",
+  },
+  {
+    date: "2026-07-04",
+    title: "Figma plugin: Auto size and color-safe swaps",
+    summary:
+      "A new Auto size mode keeps insert/replace sized to match the current selection, alongside fixed presets. Swapping a single-color icon now keeps its existing fill color instead of resetting to black.",
+    tag: "improved",
+  },
+  {
+    date: "2026-07-04",
+    title: "Settings is now a popup",
+    summary:
+      "The Figma plugin's Settings and About panels moved into a proper modal, with new toggles for auto-jump-to-library and grouped search results.",
+    tag: "improved",
+  },
+  {
     date: "2026-06-20",
     title: "Figma plugin is live",
     summary:
