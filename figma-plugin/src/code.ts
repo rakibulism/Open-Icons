@@ -18,7 +18,7 @@ const SETTINGS_KEY = "open-icons:settings"; // { naming, shapeDetect }
 const LISTS_KEY = "open-icons:lists"; // { favorites, recents }
 const DATA_KEY = "openIcons"; // pluginData namespace on inserted nodes
 
-type IconMeta = { set: string; name: string; variant: string };
+type IconMeta = { set: string; name: string; variant: string; mono: boolean };
 type Settings = {
   naming: boolean;
   shapeDetect: boolean;
@@ -73,6 +73,34 @@ function placeAtCenter(node: SceneNode) {
   }
 }
 
+/** First visible solid fill found on `node` or any descendant. */
+function findSolidFill(node: SceneNode): SolidPaint | null {
+  const stack: SceneNode[] = [node];
+  while (stack.length) {
+    const n = stack.pop()!;
+    if ("fills" in n && Array.isArray(n.fills)) {
+      const solid = (n.fills as Paint[]).find((f): f is SolidPaint => f.type === "SOLID" && f.visible !== false);
+      if (solid) return solid;
+    }
+    if ("children" in n) stack.push(...(n.children as SceneNode[]));
+  }
+  return null;
+}
+
+/** Recolor every solid fill on `node` and its descendants to `paint`. */
+function applySolidFill(node: SceneNode, paint: SolidPaint) {
+  const stack: SceneNode[] = [node];
+  while (stack.length) {
+    const n = stack.pop()!;
+    if ("fills" in n && Array.isArray(n.fills) && (n.fills as Paint[]).length > 0) {
+      (n as GeometryMixin).fills = (n.fills as Paint[]).map((f) =>
+        f.type === "SOLID" ? { ...f, color: paint.color, opacity: paint.opacity ?? f.opacity } : f,
+      );
+    }
+    if ("children" in n) stack.push(...(n.children as SceneNode[]));
+  }
+}
+
 /** Identify a node: pluginData first, then "set/icon" layer name. */
 function identify(node: BaseNode): IconMeta | { set: string; name: string } | null {
   const raw = node.getPluginData(DATA_KEY);
@@ -92,9 +120,13 @@ function identify(node: BaseNode): IconMeta | { set: string; name: string } | nu
 
 /** Replace one node in place with new SVG, at `size` (square), preserving slot. */
 function replaceNode(old: SceneNode, svg: string, meta: IconMeta, size: number): SceneNode {
+  // Single-color packs render as whatever fill the SVG happens to ship with —
+  // carry over the old icon's color so swapping doesn't reset it to black.
+  const priorFill = meta.mono ? findSolidFill(old) : null;
   const node = figma.createNodeFromSvg(svg);
   applyMeta(node, meta);
   applyFrameProps(node, size);
+  if (priorFill) applySolidFill(node, priorFill);
   // Center the new (square) node over the old node's footprint.
   node.x = old.x;
   node.y = old.y;

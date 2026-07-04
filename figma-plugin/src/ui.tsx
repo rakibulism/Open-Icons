@@ -24,7 +24,7 @@ type SetMeta = {
 };
 type Hit = { n: string; s: string; v: Record<string, string> };
 type Index = { total: number; sets: Record<string, SetMeta>; icons: Hit[] };
-type IconMeta = { set: string; name: string; variant: string };
+type IconMeta = { set: string; name: string; variant: string; mono: boolean };
 type Detected = { set: string; name: string; variant?: string } | null;
 type SelNode = { id: string; name: string; detected: Detected; w: number; h: number };
 type Ref = { s: string; n: string };
@@ -455,7 +455,7 @@ function App() {
   async function doInsert(hit: Hit, v: string) {
     try {
       const svg = await fetch(urlFor(index!.sets[hit.s], hit, v)).then((r) => r.text());
-      post({ type: "insert-svg", svg, meta: { set: hit.s, name: hit.n, variant: v }, size });
+      post({ type: "insert-svg", svg, meta: { set: hit.s, name: hit.n, variant: v, mono: index!.sets[hit.s].mono }, size });
       addRecent(hit);
     } catch {
       setStatus("Couldn't fetch that icon — try again.");
@@ -469,7 +469,7 @@ function App() {
       const cached = cache.get(url);
       const svg: string = cached ?? (await fetch(url).then((r) => r.text()));
       if (cached === undefined) cache.set(url, svg);
-      items.push({ id: e.id, svg, meta: { set: e.hit.s, name: e.hit.n, variant: e.v } });
+      items.push({ id: e.id, svg, meta: { set: e.hit.s, name: e.hit.n, variant: e.v, mono: index!.sets[e.hit.s].mono } });
     }
     if (items.length) post({ type: "replace-batch", items, size });
     const seen = new Set<string>();
@@ -766,6 +766,19 @@ function App() {
             )}
           </>
         )}
+
+        {identified.length === 1 && library === identified[0].meta.set && categoryHits.length > 0 && (
+          <div className="lib category-section">
+            <div className="lib-head">
+              <div className="lib-meta"><b>Icons in this category</b></div>
+            </div>
+            <div className="grid">
+              {categoryHits.map((h) => (
+                <SwapCell key={keyOf(h)} hit={h} targetId={identified[0].node.id} />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="resize" onPointerDown={onResizeStart} title="Drag to resize" />
@@ -845,16 +858,6 @@ function App() {
                 <div className="panel-sub">Same icon in other libraries</div>
                 <div className="grid small">
                   {others.map((h) => (
-                    <SwapCell key={keyOf(h)} hit={h} targetId={selection[0].id} />
-                  ))}
-                </div>
-              </>
-            )}
-            {categoryHits.length > 0 && (
-              <>
-                <div className="panel-sub">Icons in this category</div>
-                <div className="grid small">
-                  {categoryHits.map((h) => (
                     <SwapCell key={keyOf(h)} hit={h} targetId={selection[0].id} />
                   ))}
                 </div>

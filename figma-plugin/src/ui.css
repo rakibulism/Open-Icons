@@ -221,6 +221,7 @@ html[data-theme="dark"] {
 .overview { padding: 4px 0 14px; }
 .lib { padding: 10px 10px 4px; }
 .lib + .lib { border-top: 1px solid var(--figma-color-border, #ececec); margin-top: 6px; }
+.category-section { border-top: 1px solid var(--figma-color-border, #ececec); margin-top: 6px; }
 .lib-head { display: flex; align-items: center; justify-content: space-between; padding: 0 0 8px; }
 .lib-meta { display: flex; align-items: baseline; gap: 8px; }
 .lib-meta b { font-size: 12px; font-weight: 600; }
