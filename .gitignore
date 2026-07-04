@@ -51,3 +51,4 @@ secrets.local
 /figma-plugin/community/_video/*.wav
 /figma-plugin/community/_video/frame_*.png
 /figma-plugin/community/_src/*.html
+.env*
