@@ -3,10 +3,45 @@
 All notable changes to Open Icons are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
-## [0.3.0] — 2026-06-20
+## [0.3.0] — 2026-07-04
 
-A visual refresh of the website: a bolder brand color, redesigned pack cards,
-a sunset hero with a water-ripple effect, and search built into the home page.
+A visual refresh of the website, a much smarter search everywhere, and a
+substantial round of Figma plugin upgrades: auto-navigation, related-icon
+browsing, an Auto size mode, color-safe swapping, and a real Settings modal.
+
+### Search, everywhere
+
+- **Fuzzy prefix fallback** — search now surfaces close relatives even without
+  an exact substring match (typing "globe" also finds "global"), by
+  progressively trying shorter prefixes once exact/alias matches run thin.
+- **Search aliases** — packs that name a concept differently now still surface
+  under the common term (e.g. "user group" finds Remix Icon's `group`/`team`),
+  matching progressively as you type rather than only once fully typed.
+- **Grouped results** — searching across all packs (site global search and the
+  Figma plugin) now groups matches by pack with a "See all →" per group,
+  instead of one mixed grid.
+- **Icons in this category** — viewing an icon (site detail modal or an
+  identified selection in the plugin) now surfaces other icons in the same
+  pack sharing its core keyword, one click away.
+- One-click **clear (×)** button on every search box (site and plugin).
+
+### Figma plugin
+
+- **Auto-jump to library**: selecting an identified icon on canvas now jumps
+  the browser into that icon's library and reveals it via search, with a
+  brief highlight — instead of leaving you wherever you were browsing.
+- **Auto size**: an explicit "Auto" mode that keeps the insert/replace size in
+  sync with the selected icon, alongside the fixed presets (16/24/32/48/64 +
+  custom px) — picking a preset now locks it until Auto is re-enabled.
+- **Color-safe swapping**: replacing a single-color icon now keeps the
+  outgoing icon's fill color instead of resetting to the fetched SVG's
+  default (multicolor packs like Flagpack are left untouched).
+- **Settings is now a popup modal**, with new toggles for auto-jump-to-library
+  and grouped search results — both default on, either can be switched off.
+- UI polish pass: consistent control heights, tighter spacing rhythm, and
+  quieter secondary buttons instead of a repeated glowing CTA.
+- Fixed a manifest bug where a stray duplicate `id` key could make Figma fail
+  to load the plugin ("An error occurred while loading the plugin environment").
 
 ### Brand & look
 
