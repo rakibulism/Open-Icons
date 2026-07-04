@@ -13,6 +13,5 @@
       "https://data.jsdelivr.com"
     ],
     "reasoning": "Loads the icon index from Open Icons and fetches SVG icons live from the jsDelivr CDN. No icons are bundled with the plugin."
-  },
-"id": "1650029291455166123"
+  }
 }
