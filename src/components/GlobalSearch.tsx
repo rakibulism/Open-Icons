@@ -71,43 +71,45 @@ export default function GlobalSearch({ initialQuery = "" }: { initialQuery?: str
   return (
     <div>
       <div className="sticky top-14 z-20 -mx-5 mb-6 border-b bg-background/85 px-5 py-4 backdrop-blur-md">
-        {/* Search bar */}
-        <div className="relative">
-          <input
-            autoFocus
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={
-              index
-                ? `Search ${index.total.toLocaleString()} icons across all packs…`
-                : "Loading icons…"
-            }
-            className="w-full rounded-xl border bg-surface px-5 py-4 pr-11 text-base outline-none transition-colors focus:border-border-strong"
-          />
-          {query && (
-            <button
-              onClick={() => setQuery("")}
-              aria-label="Clear search"
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded p-1.5 text-muted hover:bg-accent hover:text-foreground"
-            >
-              ✕
-            </button>
+        <div className="flex flex-col gap-3 md:flex-row md:items-start">
+          {/* Search bar — first half */}
+          <div className="relative md:w-1/2">
+            <input
+              autoFocus
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={
+                index
+                  ? `Search ${index.total.toLocaleString()} icons across all packs…`
+                  : "Loading icons…"
+              }
+              className="w-full rounded-xl border bg-surface px-5 py-4 pr-11 text-base outline-none transition-colors focus:border-border-strong"
+            />
+            {query && (
+              <button
+                onClick={() => setQuery("")}
+                aria-label="Clear search"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded p-1.5 text-muted hover:bg-accent hover:text-foreground"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Set filter — second half */}
+          {index && (
+            <div className="flex flex-wrap content-start gap-1.5 md:w-1/2">
+              <Chip active={activeSet === null} onClick={() => setActiveSet(null)}>
+                All packs
+              </Chip>
+              {setList.map(([id, meta]) => (
+                <Chip key={id} active={activeSet === id} onClick={() => setActiveSet(id)}>
+                  {meta.name}
+                </Chip>
+              ))}
+            </div>
           )}
         </div>
-
-        {/* Set filter */}
-        {index && (
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            <Chip active={activeSet === null} onClick={() => setActiveSet(null)}>
-              All packs
-            </Chip>
-            {setList.map(([id, meta]) => (
-              <Chip key={id} active={activeSet === id} onClick={() => setActiveSet(id)}>
-                {meta.name}
-              </Chip>
-            ))}
-          </div>
-        )}
 
         {/* Status line */}
         <p className="mt-3 text-xs text-muted">
