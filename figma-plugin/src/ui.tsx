@@ -331,6 +331,17 @@ function App() {
       }));
   }, [index, selection, byKey]);
 
+  // Other icons in the same library that share the identified icon's core
+  // keyword (its name's first segment, e.g. "user" in "user-add") — a rough
+  // "same category" set, since most packs don't carry real category data.
+  const categoryHits = useMemo(() => {
+    if (!index || identified.length !== 1) return [] as Hit[];
+    const { set, name } = identified[0].meta;
+    const keyword = name.split("-")[0];
+    if (!keyword) return [];
+    return (iconsBySet[set] ?? []).filter((h) => h.n !== name && h.n.includes(keyword)).slice(0, 18);
+  }, [index, identified, iconsBySet]);
+
   // When exactly one identified icon is selected on canvas, jump the browser
   // into that icon's library and reveal it — searching its exact name rather
   // than blindly rendering everything up to it, so this stays instant even
@@ -834,6 +845,16 @@ function App() {
                 <div className="panel-sub">Same icon in other libraries</div>
                 <div className="grid small">
                   {others.map((h) => (
+                    <SwapCell key={keyOf(h)} hit={h} targetId={selection[0].id} />
+                  ))}
+                </div>
+              </>
+            )}
+            {categoryHits.length > 0 && (
+              <>
+                <div className="panel-sub">Icons in this category</div>
+                <div className="grid small">
+                  {categoryHits.map((h) => (
                     <SwapCell key={keyOf(h)} hit={h} targetId={selection[0].id} />
                   ))}
                 </div>
