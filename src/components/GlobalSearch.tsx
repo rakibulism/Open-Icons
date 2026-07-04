@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useDeferredValue } from "react";
 import { cdnUrl } from "@/lib/sources";
+import { matchesQuery } from "@/lib/search-aliases";
 import IconImage from "./IconImage";
 import IconDetail, { type SetMeta } from "./IconDetail";
 
@@ -33,13 +34,13 @@ export default function GlobalSearch({ initialQuery = "" }: { initialQuery?: str
 
   const { results, capped, matchCount } = useMemo(() => {
     if (!index) return { results: [] as Hit[], capped: false, matchCount: 0 };
-    const q = deferredQuery.trim().toLowerCase();
+    const q = deferredQuery.trim();
     if (!q) return { results: [], capped: false, matchCount: 0 };
     const out: Hit[] = [];
     let total = 0;
     for (const it of index.icons) {
       if (activeSet && it.s !== activeSet) continue;
-      if (it.n.toLowerCase().includes(q)) {
+      if (matchesQuery(it.n.toLowerCase(), q)) {
         total++;
         if (out.length < MAX_RESULTS) out.push(it);
       }
