@@ -59,7 +59,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Open Icons" },
   icons: {
-    icon: "/icon.png",
+    icon: "/favicon.png",
     apple: "/brand/apple-touch-icon.png",
   },
   openGraph: {
