@@ -30,13 +30,21 @@ html[data-theme="dark"] {
 
 /* Header */
 .topbar { display: flex; align-items: center; gap: 6px; padding: var(--pad) 10px calc(var(--pad) - 2px); }
+.search-wrap { position: relative; flex: 1; min-width: 0; }
 .search {
-  flex: 1; min-width: 0; height: var(--ctl-h);
+  width: 100%; height: var(--ctl-h);
   border: 1px solid var(--figma-color-border, #e6e6e6);
   background: var(--figma-color-bg-secondary, #f5f5f5);
-  color: inherit; border-radius: 7px; padding: 0 10px; font-size: 12px; outline: none;
+  color: inherit; border-radius: 7px; padding: 0 26px 0 10px; font-size: 12px; outline: none;
 }
 .search:focus { border-color: var(--figma-color-border-selected, #0d99ff); }
+.search-clear {
+  position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
+  width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center;
+  border: none; border-radius: 5px; padding: 0; cursor: pointer; font-size: 10px; line-height: 1;
+  background: transparent; color: var(--figma-color-text-secondary, #888);
+}
+.search-clear:hover { background: var(--figma-color-border, #e6e6e6); color: var(--figma-color-text, #111); }
 .iconbtn {
   width: var(--ctl-h); height: var(--ctl-h); flex: 0 0 auto;
   display: inline-flex; align-items: center; justify-content: center;

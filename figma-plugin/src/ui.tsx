@@ -312,6 +312,19 @@ function App() {
       }));
   }, [index, selection, byKey]);
 
+  // When exactly one identified icon is selected on canvas, jump the browser
+  // into that icon's library automatically. Tracked per selection so it only
+  // fires once per selection change — it won't fight a manual library switch
+  // made while the same node stays selected.
+  const autoNavKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    const selKey = selection.map((n) => n.id).join(",");
+    if (identified.length !== 1 || autoNavKeyRef.current === selKey) return;
+    autoNavKeyRef.current = selKey;
+    setLibrary(identified[0].meta.set);
+    setView("library");
+  }, [identified, selection]);
+
   const nameGuesses = useMemo(() => {
     if (!index || selCount !== 1 || identified.length) return [];
     return byNorm.get(normalize(selection[0].name)) ?? [];
@@ -504,15 +517,20 @@ function App() {
 
       {/* Header */}
       <div className="topbar">
-        <input
-          autoFocus
-          className="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={
-            library === "all" ? `Search ${index.total.toLocaleString()} icons…` : `Search ${cur?.name}…`
-          }
-        />
+        <div className="search-wrap">
+          <input
+            autoFocus
+            className="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={
+              library === "all" ? `Search ${index.total.toLocaleString()} icons…` : `Search ${cur?.name}…`
+            }
+          />
+          {query && (
+            <button className="search-clear" title="Clear search" onClick={() => setQuery("")}>✕</button>
+          )}
+        </div>
         <button className="iconbtn" title="Settings" onClick={() => { setSettingsOpen((s) => !s); setAboutOpen(false); }}>⚙</button>
         <button className="iconbtn" title="About" onClick={() => { setAboutOpen((s) => !s); setSettingsOpen(false); }}>⋯</button>
       </div>
