@@ -253,13 +253,16 @@ function App() {
     hit.s === library && variant ? variant : index!.sets[hit.s].defaultVariant;
 
   // Full filtered list for the grid (windowed at render via `limit`).
+  // Searching a single library only — searching "All libraries" is grouped
+  // per-pack instead (see `groupedResults` below).
   const allIcons = useMemo(() => {
     if (!index) return [] as Hit[];
     const q = query.trim();
     if (q) {
+      if (library === "all") return [];
       const out: Hit[] = [];
       for (const it of index.icons) {
-        if (library !== "all" && it.s !== library) continue;
+        if (it.s !== library) continue;
         if (matchesQuery(it.n.toLowerCase(), q)) {
           out.push(it);
           if (out.length >= MAX_RESULTS) break;
@@ -276,6 +279,26 @@ function App() {
       return refs.map((r) => byKey.get(keyOf(r))).filter((h): h is Hit => !!h);
     }
   }, [index, query, library, view, recents, favorites, byKey, iconsBySet]);
+
+  // Searching across "All libraries": group matches by pack, so results read
+  // as "Bootstrap: bell", "Doodle Icons: bell-related", etc. instead of one
+  // mixed grid.
+  const groupedResults = useMemo(() => {
+    if (!index || library !== "all") return [] as { id: string; name: string; hits: Hit[] }[];
+    const q = query.trim();
+    if (!q) return [];
+    const bySet = new Map<string, Hit[]>();
+    let total = 0;
+    for (const it of index.icons) {
+      if (total >= MAX_RESULTS) break;
+      if (!matchesQuery(it.n.toLowerCase(), q)) continue;
+      (bySet.get(it.s) ?? bySet.set(it.s, []).get(it.s)!).push(it);
+      total++;
+    }
+    return setEntries
+      .filter(([id]) => bySet.has(id))
+      .map(([id, m]) => ({ id, name: m.name, hits: bySet.get(id)! }));
+  }, [index, query, library, setEntries]);
 
   // ---- Identified selection ----
   const identified = useMemo(() => {
@@ -610,6 +633,32 @@ function App() {
               </div>
             ))}
           </div>
+        ) : library === "all" && query.trim() ? (
+          groupedResults.length === 0 ? (
+            <p className="empty">No icons match “{query}”.</p>
+          ) : (
+            <div className="overview">
+              {groupedResults.map(({ id, name, hits }) => (
+                <div className="lib" key={id}>
+                  <div className="lib-head">
+                    <div className="lib-meta">
+                      <b>{name}</b>
+                      <span>{hits.length.toLocaleString()} match{hits.length === 1 ? "" : "es"}</span>
+                    </div>
+                    <button className="btn-primary sm" onClick={() => setLibrary(id)}>
+                      <span className="btn-glow" />
+                      <span className="btn-label">See all →</span>
+                    </button>
+                  </div>
+                  <div className="preview">
+                    {hits.map((hit) => (
+                      <Cell key={keyOf(hit)} hit={hit} />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
         ) : allIcons.length === 0 ? (
           <p className="empty">
             {query.trim()
