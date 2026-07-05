@@ -39,14 +39,28 @@ async function resolveVersion(source: (typeof SOURCES)[number]): Promise<string>
   return latest;
 }
 
-/** List SVGs from a local /public dir as site-relative paths (e.g. /doodle/x.svg). */
+/** List SVGs from a local /public dir as site-relative paths recursively. */
 async function listLocal(localDir: string): Promise<JsdFile[]> {
   const dir = join(process.cwd(), localDir);
-  const entries = await readdir(dir);
   const base = basename(localDir);
-  return entries
-    .filter((f) => f.toLowerCase().endsWith(".svg"))
-    .map((f) => ({ name: `/${base}/${f}` }));
+  const results: JsdFile[] = [];
+
+  async function walk(currentDir: string, relativePrefix: string) {
+    const entries = await readdir(currentDir, { withFileTypes: true });
+    for (const entry of entries) {
+      const relPath = join(relativePrefix, entry.name);
+      if (entry.isDirectory()) {
+        await walk(join(currentDir, entry.name), relPath);
+      } else if (entry.isFile() && entry.name.toLowerCase().endsWith(".svg")) {
+        // Normalize path separators to forward slashes for the site manifest
+        const normalizedRelPath = relPath.replace(/\\/g, "/");
+        results.push({ name: `/${base}/${normalizedRelPath}` });
+      }
+    }
+  }
+
+  await walk(dir, "");
+  return results;
 }
 
 async function syncOne(
