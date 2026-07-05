@@ -143,11 +143,7 @@ async function main() {
     }
   }
 
-  summaries.sort((a, b) => {
-    if (a.id === "reicon") return -1;
-    if (b.id === "reicon") return 1;
-    return a.name.localeCompare(b.name);
-  });
+  summaries.sort((a, b) => a.name.localeCompare(b.name));
   const total = summaries.reduce((n, s) => n + s.count, 0);
   await writeFile(
     join(DATA_DIR, "index.json"),

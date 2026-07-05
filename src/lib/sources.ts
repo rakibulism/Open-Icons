@@ -24,32 +24,8 @@ const isSvg = (p: string) => /\.svg$/i.test(p);
 // ---------------------------------------------------------------------------
 
 export const SOURCES: IconSource[] = [
-  // 1. reicon - svg icons set bundled in this repo, served from /public.
-  {
-    id: "reicon",
-    name: "ReIcon",
-    type: "site",
-    pkg: "reicon",
-    ref: "1.0.0",
-    localDir: "public/reicon",
-    license: { name: "MIT", url: "https://github.com/dqev/reicon/blob/main/LICENSE" },
-    homepage: "https://reicon.dev",
-    repoUrl: "https://github.com/dqev/reicon",
-    defaultVariant: "outline",
-    variants: ["outline", "filled"],
-    mono: true,
-    parse(path) {
-      if (!isSvg(path)) return null;
-      const p = parts(path);
-      // Format: "/reicon/<variant>/<name>.svg"
-      if (p.length !== 3 || p[0] !== "reicon") return null;
-      const variant = p[1];
-      if (variant !== "outline" && variant !== "filled") return null;
-      return { name: baseName(path), variant, path };
-    },
-  },
 
-  // 2. Lucide — /icons/<name>.svg (flat)
+  // 1. Lucide — /icons/<name>.svg (flat)
   {
     id: "lucide",
     name: "Lucide",
@@ -343,6 +319,31 @@ export const SOURCES: IconSource[] = [
       const p = parts(path);
       if (p.length !== 2 || p[0] !== "doodle") return null; // "/doodle/<name>.svg"
       return { name: baseName(path), variant: "default", path };
+    },
+  },
+
+  // 15. ReIcon — SVG icons set bundled in this repo, served from /public.
+  {
+    id: "reicon",
+    name: "ReIcon",
+    type: "site",
+    pkg: "reicon",
+    ref: "1.0.0",
+    localDir: "public/reicon",
+    license: { name: "MIT", url: "https://github.com/dqev/reicon/blob/main/LICENSE" },
+    homepage: "https://reicon.dev",
+    repoUrl: "https://github.com/dqev/reicon",
+    defaultVariant: "outline",
+    variants: ["outline", "filled"],
+    mono: true,
+    parse(path) {
+      if (!isSvg(path)) return null;
+      const p = parts(path);
+      // Format: "/reicon/<variant>/<name>.svg"
+      if (p.length !== 3 || p[0] !== "reicon") return null;
+      const variant = p[1];
+      if (variant !== "outline" && variant !== "filled") return null;
+      return { name: baseName(path), variant, path };
     },
   },
 ];
