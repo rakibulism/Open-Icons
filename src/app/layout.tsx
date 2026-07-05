@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Libertinus_Serif, Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import { Analytics } from "@vercel/analytics/next";
 import { SITE_URL, CREATOR_X, CREATOR_HANDLE } from "@/lib/site";
 import { siteGraph } from "@/lib/structured-data";
 import SearchHotkey from "@/components/SearchHotkey";
@@ -108,6 +109,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <SearchHotkey />
         <ServiceWorker />
         <main className="flex-1">{children}</main>
+
+        <Analytics />
 
         <footer className="border-t">
           <div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-8 text-sm text-muted">
