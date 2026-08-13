@@ -5,7 +5,8 @@ import { cdnUrl } from "../../src/lib/sources";
 import { fingerprint, similarity } from "../../src/lib/fingerprint";
 import { searchMatches } from "../../src/lib/search-aliases";
 
-const DATA_URL = "https://open-icons.vercel.app";
+const DATA_URL = "https://openicons.rakibulism.space";
+const DATA_URL_FALLBACK = "https://open-icons.vercel.app";
 const DEFAULT_LIBRARY = "all";
 const MAX_RESULTS = 1000;
 const PAGE = 150; // grid render window; grows on scroll
@@ -44,6 +45,16 @@ const CREATOR_X = "https://x.com/rakibulism";
 function post(msg: unknown) {
   parent.postMessage({ pluginMessage: msg }, "*");
 }
+// Retries against DATA_URL_FALLBACK when a request to DATA_URL fails outright
+// (network/CSP block) — not on HTTP error statuses, which callers handle themselves.
+async function fetchWithFallback(url: string): Promise<Response> {
+  try {
+    return await fetch(url);
+  } catch (err) {
+    if (!url.startsWith(DATA_URL)) throw err;
+    return fetch(url.replace(DATA_URL, DATA_URL_FALLBACK));
+  }
+}
 const keyOf = (r: { s: string; n: string }) => `${r.s}:${r.n}`;
 
 function pathForVariant(sm: SetMeta, hit: Hit, variant: string) {
@@ -68,8 +79,13 @@ function normalize(s: string) {
     .replace(/^-+|-+$/g, "");
 }
 
+function onImgError(e: { currentTarget: HTMLImageElement }) {
+  const img = e.currentTarget;
+  if (img.src.startsWith(DATA_URL)) img.src = img.src.replace(DATA_URL, DATA_URL_FALLBACK);
+}
+
 function Icon({ src, mono }: { src: string; mono: boolean }) {
-  if (!mono) return <img className="thumb" src={src} alt="" />;
+  if (!mono) return <img className="thumb" src={src} alt="" onError={onImgError} />;
   return (
     <span
       className="thumb"
@@ -162,7 +178,7 @@ function App() {
   // ---- Load search index ----
   useEffect(() => {
     let alive = true;
-    fetch(`${DATA_URL}/data/search.json`)
+    fetchWithFallback(`${DATA_URL}/data/search.json`)
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
@@ -389,7 +405,7 @@ function App() {
   function ensureFingerprints(): Promise<Record<string, string>> {
     if (fpCacheRef.current) return Promise.resolve(fpCacheRef.current);
     if (fpPromiseRef.current) return fpPromiseRef.current;
-    const p = fetch(`${DATA_URL}/data/fingerprints.json`)
+    const p = fetchWithFallback(`${DATA_URL}/data/fingerprints.json`)
       .then((r) => (r.ok ? r.json() : {}))
       .catch(() => ({}))
       .then((d) => {
@@ -445,7 +461,7 @@ function App() {
   // ---- Actions ----
   async function doInsert(hit: Hit, v: string) {
     try {
-      const svg = await fetch(urlFor(index!.sets[hit.s], hit, v)).then((r) => r.text());
+      const svg = await fetchWithFallback(urlFor(index!.sets[hit.s], hit, v)).then((r) => r.text());
       post({ type: "insert-svg", svg, meta: { set: hit.s, name: hit.n, variant: v, mono: index!.sets[hit.s].mono }, size });
       addRecent(hit);
     } catch {
@@ -458,7 +474,7 @@ function App() {
     for (const e of entries) {
       const url = urlFor(index!.sets[e.hit.s], e.hit, e.v);
       const cached = cache.get(url);
-      const svg: string = cached ?? (await fetch(url).then((r) => r.text()));
+      const svg: string = cached ?? (await fetchWithFallback(url).then((r) => r.text()));
       if (cached === undefined) cache.set(url, svg);
       items.push({ id: e.id, svg, meta: { set: e.hit.s, name: e.hit.n, variant: e.v, mono: index!.sets[e.hit.s].mono } });
     }

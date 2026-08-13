@@ -8,6 +8,7 @@
   "documentAccess": "dynamic-page",
   "networkAccess": {
     "allowedDomains": [
+      "https://openicons.rakibulism.space",
       "https://open-icons.vercel.app",
       "https://cdn.jsdelivr.net",
       "https://data.jsdelivr.com"
