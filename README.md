@@ -49,3 +49,8 @@ npm run build    # runs sync automatically (prebuild), then builds
 
 Next.js (App Router) · TypeScript · Tailwind CSS v4. SEO via per-set static
 generation, sitemap, robots, and JSON-LD structured data.
+
+---
+
+Built by [Rakibul Islam](https://rakibulism.space) — design engineer, co-founder of Panze LLC.
+More work and writing at [rakibulism.space](https://rakibulism.space).
